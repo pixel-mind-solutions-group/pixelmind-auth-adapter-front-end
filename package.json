@@ -26,6 +26,7 @@
     "@coreui/react": "^5.9.2",
     "@coreui/react-chartjs": "^3.0.0",
     "@coreui/utils": "^2.0.2",
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "@popperjs/core": "^2.11.8",
     "chart.js": "^4.5.1",
     "classnames": "^2.5.1",

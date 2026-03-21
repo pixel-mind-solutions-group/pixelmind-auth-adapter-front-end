@@ -5,7 +5,6 @@ import {
   cilUser,
   cilViewModule,
   cilApplications,
-  cilApplicationsSettings,
   cilPeople,
   cilSettings,
 } from '@coreui/icons'
@@ -15,36 +14,36 @@ const _nav = [
   {
     component: CNavGroup,
     name: 'User Management',
-    to: '/application/permission',
+    to: '/user',
     icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
         name: 'User',
-        to: '/application/scope',
+        to: '/user',
       },
       {
         component: CNavItem,
         name: 'Priviliage',
-        to: '/application/module',
+        to: '/user/priviliage',
       },
     ],
   },
   {
     component: CNavGroup,
     name: 'User Role',
-    to: '/application/permission',
+    to: '/user-role',
     icon: <CIcon icon={cilUserPlus} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
         name: 'User Role',
-        to: '/application/scope',
+        to: '/user-role/user-role',
       },
       {
         component: CNavItem,
         name: 'Map UI Permissions',
-        to: '/application/module',
+        to: '/user-role/map-ui-permissions',
       },
     ],
   },
@@ -61,59 +60,59 @@ const _nav = [
   {
     component: CNavGroup,
     name: 'Application',
-    to: '/application/permission',
+    to: '/application',
     icon: <CIcon icon={cilApplications} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
         name: 'Application',
-        to: '/application/scope',
+        to: '/application/application',
       },
       {
         component: CNavItem,
         name: 'Application Modules',
-        to: '/application/scope',
+        to: '/application/module',
       },
       {
         component: CNavItem,
         name: 'Application UI Permissions',
-        to: '/application/module',
+        to: '/application/ui-permissions',
       },
     ],
   },
   {
     component: CNavGroup,
     name: 'Module',
-    to: '/application/permission',
+    to: '/module',
     icon: <CIcon icon={cilViewModule} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
         name: 'Module',
-        to: '/application/scope',
+        to: '/module/module',
       },
       {
         component: CNavItem,
         name: 'Module API Permissions',
-        to: '/application/module',
+        to: '/module/api-permissions',
       },
     ],
   },
   {
     component: CNavGroup,
     name: 'Settings',
-    to: '/application/permission',
+    to: '/settings',
     icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
         name: 'API Permission',
-        to: '/application/module',
+        to: '/settings/api-permissions',
       },
       {
         component: CNavItem,
         name: 'UI Permission',
-        to: '/application/module',
+        to: '/settings/ui-permissions',
       },
     ],
   },
