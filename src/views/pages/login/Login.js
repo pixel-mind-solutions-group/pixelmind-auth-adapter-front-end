@@ -6,11 +6,10 @@ const Login = () => {
   const navigate = useNavigate()
 
   const handleLogin = (e) => {
-    e.preventDefault() // 🚨 stop page reload
-
-    // 👉 navigate to dashboard
+    e.preventDefault()
     navigate('/dashboard')
   }
+
   return (
     <div className={styles.container}>
       <div className="row">
