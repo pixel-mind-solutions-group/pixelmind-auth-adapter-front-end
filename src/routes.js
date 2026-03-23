@@ -19,6 +19,7 @@ import React from 'react'
 const Login = React.lazy(() => import('./views/pages/login/Login'))
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const User = React.lazy(() => import('./components/user/User'))
+const UserRole = React.lazy(() => import('./components/userRole/UserRole'))
 
 /**
  * Array of route configuration objects
@@ -42,6 +43,7 @@ const routes = [
   { path: '/login', name: 'Login', element: Login },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/user/user', name: 'User', element: User },
+  { path: '/user-role/user-role', name: 'User Role', element: UserRole },
 ]
 
 export default routes
