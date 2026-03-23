@@ -49,7 +49,7 @@ const User = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [size, setSize] = useState(10)
+  const [size, setSize] = useState(5)
 
   const handleFormChange = (e) => {
     const { id, value } = e.target
