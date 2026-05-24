@@ -68,16 +68,6 @@ const _nav = [
         name: 'Application',
         to: '/application/application',
       },
-      {
-        component: CNavItem,
-        name: 'Application Modules',
-        to: '/application/module',
-      },
-      {
-        component: CNavItem,
-        name: 'Application UI Permissions',
-        to: '/application/ui-permissions',
-      },
     ],
   },
   {
@@ -95,6 +85,11 @@ const _nav = [
         component: CNavItem,
         name: 'Module API Permissions',
         to: '/module/api-permissions',
+      },
+      {
+        component: CNavItem,
+        name: 'Module UI Permissions',
+        to: '/module/ui-permissions',
       },
     ],
   },

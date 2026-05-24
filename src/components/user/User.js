@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CCard,
   CCardBody,
@@ -11,7 +11,6 @@ import {
   CFormFeedback,
   CInputGroup,
   CInputGroupText,
-  CFormSelect,
   CTableDataCell,
   CFormCheck,
   CButton,
