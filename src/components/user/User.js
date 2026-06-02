@@ -89,7 +89,6 @@ const User = () => {
     setEmailVerified(false)
     setActive(false)
     setValidated(false)
-    setCurrentPage(0)
     setSearchParam('')
     search()
   }
