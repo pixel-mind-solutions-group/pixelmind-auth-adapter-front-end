@@ -20,8 +20,7 @@ import {
   CTableBody,
   CTableRow,
 } from '@coreui/react'
-import { createOrModify } from '../../service/user/UserService'
-import { searchUsers } from '../../service/user/UserService'
+import { createOrModify, searchUsers, getUserById } from '../../service/user/UserService'
 import Pagination from '../pagination/Pagination'
 import { toast } from 'react-toastify'
 
@@ -133,6 +132,27 @@ const User = () => {
     search()
   }, [searchParam, currentPage, size])
 
+  const loadUserIntoForm = async (userId) => {
+    try {
+      const user = await getUserById(userId)
+      setFormData(() => ({
+        userId: user.userId,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: user.username || '',
+        email: user.email || '',
+        emailVerified: Boolean(user.emailVerified),
+        active: Boolean(user.active),
+      }))
+      setEmailVerified(Boolean(user.emailVerified))
+      setActive(Boolean(user.active))
+      setValidated(false)
+      toast.success('User loaded into form')
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
   return (
     <CRow>
       <CCol xs={12}>
@@ -240,7 +260,7 @@ const User = () => {
               <br />
               <CCol xs={12} className="d-flex justify-content-end">
                 <CButton color="primary" type="submit">
-                  Create
+                  {formData.userId ? 'Update' : 'Create'}
                 </CButton>
                 <CButton color="secondary" type="button" className="ms-2" onClick={handleReset}>
                   Reset
@@ -251,13 +271,13 @@ const User = () => {
             <CRow className="mb-3">
               <CCol xs={6}></CCol>
               <CCol xs={6} className="d-flex justify-content-end">
-                  <CFormInput
-                    type="text"
-                    placeholder="Search user..."
-                    style={{ maxWidth: '300px' }}
-                    value={searchParam}
-                    onChange={(e) => setSearchParam(e.target.value)}
-                  />
+                <CFormInput
+                  type="text"
+                  placeholder="Search user..."
+                  style={{ maxWidth: '300px' }}
+                  value={searchParam}
+                  onChange={(e) => setSearchParam(e.target.value)}
+                />
               </CCol>
             </CRow>
             <CCol xs={12}>
@@ -277,7 +297,7 @@ const User = () => {
                 <CTableBody>
                   {Array.isArray(users) ? (
                     users.map((user, index) => (
-                      <CTableRow key={user.id || index}>
+                      <CTableRow key={user.userId || index}>
                         <CTableDataCell>{user.firstName}</CTableDataCell>
                         <CTableDataCell>{user.lastName}</CTableDataCell>
                         <CTableDataCell>{user.username}</CTableDataCell>
@@ -288,7 +308,12 @@ const User = () => {
                         </CTableDataCell>
                         <CTableDataCell>{user.active ? 'Non-locked' : 'Locked'}</CTableDataCell>
                         <CTableDataCell>
-                          <CButton type="button" color="primary" size="sm">
+                          <CButton
+                            type="button"
+                            color="primary"
+                            size="sm"
+                            onClick={() => loadUserIntoForm(user.userId)}
+                          >
                             Edit
                           </CButton>{' '}
                           <CButton type="button" color="danger" size="sm">

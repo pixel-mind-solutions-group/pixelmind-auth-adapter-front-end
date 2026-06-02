@@ -32,3 +32,14 @@ export const searchUsers = (currentPage, size, query) => {
     throw error
   }
 }
+
+export const getUserById = async (userId) => {
+  try {
+    const resp = await axios.get(`${USER_API_URL}/get`, {
+      params: { user_id: userId },
+    })
+    return resp.data?.data || resp.data
+  } catch (error) {
+    throw error
+  }
+}
