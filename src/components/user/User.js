@@ -29,15 +29,15 @@ const User = () => {
   // Form state
   const [validated, setValidated] = useState(false)
   const [emailVerified, setEmailVerified] = useState(false)
-  const [enabled, setEnabled] = useState(false)
+  const [active, setActive] = useState(false)
   const [formData, setFormData] = useState({
-    userId: '',
+    userId: null,
     firstName: '',
     lastName: '',
     username: '',
     email: '',
     emailVerified: null,
-    enabled: null,
+    active: null,
   })
 
   // Search query state
@@ -58,17 +58,41 @@ const User = () => {
     }))
   }
 
-  useEffect(() => {
-    setFormData((prevData) => ({
-      ...prevData,
-      emailVerified: emailVerified,
-      enabled: enabled,
-    }))
-  }, [emailVerified, enabled])
+  const handleEmailVerifiedChange = (value) => {
+    setEmailVerified(value)
 
-  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      emailVerified: value,
+    }))
+  }
+
+  const handleActiveChange = (value) => {
+    setActive(value)
+
+    setFormData((prev) => ({
+      ...prev,
+      active: value,
+    }))
+  }
+
+  const handleReset = () => {
+    setFormData({
+      userId: null,
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      emailVerified: null,
+      active: null,
+    })
+    setEmailVerified(false)
+    setActive(false)
+    setValidated(false)
+    setCurrentPage(0)
+    setSearchParam('')
     search()
-  }, [searchParam, currentPage, size])
+  }
 
   const userFormSubmit = async (event) => {
     const form = event.currentTarget
@@ -82,6 +106,7 @@ const User = () => {
         if (data.status === 201) {
           toast.success(data.message)
           search()
+          handleReset()
         } else {
           toast.info(data.message)
         }
@@ -95,17 +120,19 @@ const User = () => {
     try {
       const data = await searchUsers(currentPage, size, searchParam)
       if (data.status === 200) {
-        setUsers(data.data.data.dataList)
-        setTotalElements(data.data.data.totalElements)
+        setUsers(data.data.data.users)
+        setTotalElements(data.data.data.total)
         setTotalPages(data.data.data.totalPages)
-        setCurrentPage(data.data.data.currentPage)
-      } else {
-        toast.info(data.message)
+        setCurrentPage(data.data.data.page)
       }
     } catch (error) {
       toast.error(error.message)
     }
   }
+
+  useEffect(() => {
+    search()
+  }, [searchParam, currentPage, size])
 
   return (
     <CRow>
@@ -127,6 +154,7 @@ const User = () => {
                   <CFormInput
                     id="firstName"
                     placeholder="First Name"
+                    value={formData.firstName}
                     onChange={(e) => handleFormChange(e)}
                     required
                   />
@@ -141,6 +169,7 @@ const User = () => {
                   <CFormInput
                     placeholder="Last Name"
                     id="lastName"
+                    value={formData.lastName}
                     onChange={(e) => handleFormChange(e)}
                     required
                   />
@@ -156,6 +185,7 @@ const User = () => {
                   <CFormInput
                     placeholder="User Name"
                     id="username"
+                    value={formData.username}
                     onChange={(e) => handleFormChange(e)}
                     required
                   />
@@ -170,6 +200,7 @@ const User = () => {
                   <CFormInput
                     placeholder="Email"
                     id="email"
+                    value={formData.email}
                     onChange={(e) => handleFormChange(e)}
                     required
                   />
@@ -186,7 +217,7 @@ const User = () => {
                     type="checkbox"
                     label="Verified"
                     id="emailVerified"
-                    onChange={(e) => setEmailVerified(e.target.checked)}
+                    onChange={(e) => handleEmailVerifiedChange(e.target.checked)}
                     checked={emailVerified}
                   />
                 </CInputGroup>
@@ -198,9 +229,9 @@ const User = () => {
                     style={{ cursor: 'pointer' }}
                     type="checkbox"
                     label="Enabled"
-                    id="enabled"
-                    onChange={(e) => setEnabled(e.target.checked)}
-                    checked={enabled}
+                    id="active"
+                    onChange={(e) => handleActiveChange(e.target.checked)}
+                    checked={active}
                   />
                 </CInputGroup>
               </CCol>
@@ -208,10 +239,12 @@ const User = () => {
               <br />
               <br />
               <br />
-              <CCol xs={11} />
-              <CCol xs="auto">
+              <CCol xs={12} className="d-flex justify-content-end">
                 <CButton color="primary" type="submit">
                   Create
+                </CButton>
+                <CButton color="secondary" type="button" className="ms-2" onClick={handleReset}>
+                  Reset
                 </CButton>
               </CCol>
             </CForm>
@@ -219,41 +252,42 @@ const User = () => {
             <CRow className="mb-3">
               <CCol xs={6}></CCol>
               <CCol xs={6} className="d-flex justify-content-end">
-                <CFormInput
-                  type="text"
-                  placeholder="Search user..."
-                  style={{ maxWidth: '300px' }}
-                  onChange={(e) => setSearchParam(e.target.value)}
-                />
+                  <CFormInput
+                    type="text"
+                    placeholder="Search user..."
+                    style={{ maxWidth: '300px' }}
+                    value={searchParam}
+                    onChange={(e) => setSearchParam(e.target.value)}
+                  />
               </CCol>
             </CRow>
             <CCol xs={12}>
               <CTable>
                 <CTableHead color="dark">
                   <CTableRow>
-                    <CTableHeaderCell scope="col">First name</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Last name</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">User name</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">First Name</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Last Name</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">User Name</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Email</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Created date</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Email verified</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Created Date</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Email Verified</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Locked</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Action</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  {Array.isArray(users) && users.length > 0 ? (
+                  {Array.isArray(users) ? (
                     users.map((user, index) => (
                       <CTableRow key={user.id || index}>
                         <CTableDataCell>{user.firstName}</CTableDataCell>
                         <CTableDataCell>{user.lastName}</CTableDataCell>
                         <CTableDataCell>{user.username}</CTableDataCell>
                         <CTableDataCell>{user.email}</CTableDataCell>
-                        <CTableDataCell>{user.createdDate}</CTableDataCell>
+                        <CTableDataCell>{user.createdAt}</CTableDataCell>
                         <CTableDataCell>
                           {user.emailVerified ? 'Verified' : 'Un-verified'}
                         </CTableDataCell>
-                        <CTableDataCell>{user.enabled ? 'Non-locked' : 'Locked'}</CTableDataCell>
+                        <CTableDataCell>{user.active ? 'Non-locked' : 'Locked'}</CTableDataCell>
                         <CTableDataCell>
                           <CButton type="button" color="primary" size="sm">
                             Edit

@@ -5,7 +5,7 @@ const USER_API_URL = `${environment.baseUrl}` + '/user'
 
 export const createOrModify = async (data) => {
   try {
-    const response = await fetch(`${USER_API_URL}/create-or-modify`, {
+    const response = await fetch(`${USER_API_URL}/register-or-modify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ export const searchUsers = (currentPage, size, query) => {
       params: {
         page: currentPage,
         size: size,
-        searchParam: query,
+        query: query,
       },
     })
     return response
