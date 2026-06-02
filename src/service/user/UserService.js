@@ -43,3 +43,14 @@ export const getUserById = async (userId) => {
     throw error
   }
 }
+
+export const deleteUserById = async (userId) => {
+  try {
+    const resp = await axios.delete(`${USER_API_URL}/delete`, {
+      params: { user_id: userId },
+    })
+    return resp.data
+  } catch (error) {
+    throw error
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   CCard,
   CCardBody,
@@ -19,8 +19,18 @@ import {
   CTable,
   CTableBody,
   CTableRow,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
-import { createOrModify, searchUsers, getUserById } from '../../service/user/UserService'
+import {
+  createOrModify,
+  searchUsers,
+  getUserById,
+  deleteUserById,
+} from '../../service/user/UserService'
 import Pagination from '../pagination/Pagination'
 import { toast } from 'react-toastify'
 
@@ -114,7 +124,7 @@ const User = () => {
     }
   }
 
-  const search = async () => {
+  const search = useCallback(async () => {
     try {
       const data = await searchUsers(currentPage, size, searchParam)
       if (data.status === 200) {
@@ -126,11 +136,11 @@ const User = () => {
     } catch (error) {
       toast.error(error.message)
     }
-  }
+  }, [currentPage, size, searchParam])
 
   useEffect(() => {
     search()
-  }, [searchParam, currentPage, size])
+  }, [search])
 
   const loadUserIntoForm = async (userId) => {
     try {
@@ -150,6 +160,38 @@ const User = () => {
       toast.success('User loaded into form')
     } catch (error) {
       toast.error(error.message)
+    }
+  }
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const confirmDelete = (user) => {
+    setUserToDelete(user)
+    setDeleteModalVisible(true)
+  }
+
+  const cancelDelete = () => {
+    setUserToDelete(null)
+    setDeleteModalVisible(false)
+  }
+
+  const deleteUser = async () => {
+    if (!userToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteUserById(userToDelete.userId)
+      toast.success('User deleted successfully')
+      if (formData.userId === userToDelete.userId) {
+        handleReset()
+      }
+      cancelDelete()
+      search()
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -316,7 +358,12 @@ const User = () => {
                           >
                             Edit
                           </CButton>{' '}
-                          <CButton type="button" color="danger" size="sm">
+                          <CButton
+                            type="button"
+                            color="danger"
+                            size="sm"
+                            onClick={() => confirmDelete(user)}
+                          >
                             Delete
                           </CButton>
                         </CTableDataCell>
@@ -341,6 +388,34 @@ const User = () => {
           </CCardBody>
         </CCard>
       </CCol>
+      <CModal visible={deleteModalVisible} onClose={cancelDelete} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Delete user</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {userToDelete ? (
+            <div>
+              <p>Are you sure you want to delete this user?</p>
+              <p>
+                <strong>
+                  {userToDelete.username || userToDelete.email || userToDelete.userId}
+                </strong>
+              </p>
+              <p className="text-danger">This action cannot be undone.</p>
+            </div>
+          ) : (
+            <p>Are you sure you want to delete this user?</p>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={cancelDelete} disabled={isDeleting}>
+            Cancel
+          </CButton>
+          <CButton color="danger" onClick={deleteUser} disabled={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </CRow>
   )
 }
