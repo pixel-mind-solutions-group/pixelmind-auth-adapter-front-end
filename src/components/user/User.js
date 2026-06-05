@@ -13,6 +13,7 @@ import {
   CInputGroupText,
   CTableDataCell,
   CFormCheck,
+  CFormSelect,
   CButton,
   CTableHeaderCell,
   CTableHead,
@@ -45,8 +46,8 @@ const User = () => {
     lastName: '',
     username: '',
     email: '',
-    emailVerified: null,
-    active: null,
+    emailVerified: false,
+    active: false,
   })
 
   // Search query state
@@ -58,6 +59,9 @@ const User = () => {
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [size, setSize] = useState(5)
+
+  // Filter state
+  const [activeFilter, setActiveFilter] = useState('-1')
 
   const handleFormChange = (e) => {
     const { id, value } = e.target
@@ -92,13 +96,14 @@ const User = () => {
       lastName: '',
       username: '',
       email: '',
-      emailVerified: null,
-      active: null,
+      emailVerified: false,
+      active: false,
     })
     setEmailVerified(false)
     setActive(false)
     setValidated(false)
     setSearchParam('')
+    setActiveFilter('-1')
     search()
   }
 
@@ -203,20 +208,18 @@ const User = () => {
             <strong>Manage Users</strong>
           </CCardHeader>
           <CCardBody>
-            <CForm
-              className="row gx-3 gy-2 align-items-center"
-              onSubmit={userFormSubmit}
-              validated={validated}
-              noValidate
-            >
-              <CCol sm={4}>
-                <CFormLabel htmlFor="specificSizeInputName">First Name</CFormLabel>
+            <CForm className="row g-3" onSubmit={userFormSubmit} validated={validated} noValidate>
+              <CCol xs={12} md={6} lg={3}>
+                <CFormLabel htmlFor="firstName" className="form-label">
+                  First Name
+                </CFormLabel>
                 <CInputGroup className="has-validation">
                   <CFormInput
                     id="firstName"
                     placeholder="First Name"
                     value={formData.firstName}
                     onChange={(e) => handleFormChange(e)}
+                    size="sm"
                     required
                   />
                   <CFormFeedback tooltip invalid>
@@ -224,14 +227,17 @@ const User = () => {
                   </CFormFeedback>
                 </CInputGroup>
               </CCol>
-              <CCol sm={4}>
-                <CFormLabel htmlFor="specificSizeInputGroupUsername">Last Name</CFormLabel>
+              <CCol xs={12} md={6} lg={3}>
+                <CFormLabel htmlFor="lastName" className="form-label">
+                  Last Name
+                </CFormLabel>
                 <CInputGroup className="has-validation">
                   <CFormInput
                     placeholder="Last Name"
                     id="lastName"
                     value={formData.lastName}
                     onChange={(e) => handleFormChange(e)}
+                    size="sm"
                     required
                   />
                   <CFormFeedback tooltip invalid>
@@ -239,8 +245,10 @@ const User = () => {
                   </CFormFeedback>
                 </CInputGroup>
               </CCol>
-              <CCol sm={4}>
-                <CFormLabel htmlFor="specificSizeInputGroupUsername">User Name</CFormLabel>
+              <CCol xs={12} md={6} lg={3}>
+                <CFormLabel htmlFor="username" className="form-label">
+                  User Name
+                </CFormLabel>
                 <CInputGroup className="has-validation">
                   <CInputGroupText>@</CInputGroupText>
                   <CFormInput
@@ -248,6 +256,7 @@ const User = () => {
                     id="username"
                     value={formData.username}
                     onChange={(e) => handleFormChange(e)}
+                    size="sm"
                     required
                   />
                   <CFormFeedback tooltip invalid>
@@ -255,14 +264,17 @@ const User = () => {
                   </CFormFeedback>
                 </CInputGroup>
               </CCol>
-              <CCol sm={4}>
-                <CFormLabel htmlFor="specificSizeInputGroupUsername">Email</CFormLabel>
+              <CCol xs={12} md={6} lg={3}>
+                <CFormLabel htmlFor="email" className="form-label">
+                  Email
+                </CFormLabel>
                 <CInputGroup className="has-validation">
                   <CFormInput
                     placeholder="Email"
                     id="email"
                     value={formData.email}
                     onChange={(e) => handleFormChange(e)}
+                    size="sm"
                     required
                   />
                   <CFormFeedback tooltip invalid>
@@ -270,58 +282,82 @@ const User = () => {
                   </CFormFeedback>
                 </CInputGroup>
               </CCol>
-              <CCol sm={2}>
-                <CFormLabel htmlFor="specificSizeInputGroupUsername">Email verification</CFormLabel>
-                <CInputGroup>
-                  <CFormCheck
-                    style={{ cursor: 'pointer' }}
-                    type="checkbox"
-                    label="Verified"
-                    id="emailVerified"
-                    onChange={(e) => handleEmailVerifiedChange(e.target.checked)}
-                    checked={emailVerified}
-                  />
-                </CInputGroup>
+              <CCol xs={6} md={3} lg={2}>
+                <CFormLabel htmlFor="emailVerified" className="form-label">
+                  Email Verified
+                </CFormLabel>
+                <CFormCheck
+                  style={{ cursor: 'pointer' }}
+                  type="checkbox"
+                  label="Yes"
+                  id="emailVerified"
+                  onChange={(e) => handleEmailVerifiedChange(e.target.checked)}
+                  checked={emailVerified}
+                />
               </CCol>
-              <CCol sm={2}>
-                <CFormLabel htmlFor="specificSizeInputGroupUsername">Lock user account</CFormLabel>
-                <CInputGroup>
-                  <CFormCheck
-                    style={{ cursor: 'pointer' }}
-                    type="checkbox"
-                    label="Enabled"
-                    id="active"
-                    onChange={(e) => handleActiveChange(e.target.checked)}
-                    checked={active}
-                  />
-                </CInputGroup>
+              <CCol xs={6} md={3} lg={2}>
+                <CFormLabel htmlFor="active" className="form-label">
+                  User Status
+                </CFormLabel>
+                <CFormCheck
+                  style={{ cursor: 'pointer' }}
+                  type="checkbox"
+                  label="Enabled"
+                  id="active"
+                  onChange={(e) => handleActiveChange(e.target.checked)}
+                  checked={active}
+                />
               </CCol>
-              <br />
-              <br />
-              <br />
-              <br />
-              <CCol xs={12} className="d-flex justify-content-end">
-                <CButton color="primary" type="submit">
+              <CCol xs={12} className="d-flex justify-content-end gap-2 mt-2">
+                <CButton color="primary" type="submit" size="sm">
                   {formData.userId ? 'Update' : 'Create'}
                 </CButton>
-                <CButton color="secondary" type="button" className="ms-2" onClick={handleReset}>
-                  Reset
-                </CButton>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={handleReset}
+                  type="button"
+                >
+                  Clear
+                </button>
               </CCol>
             </CForm>
-            <br />
-            <CRow className="mb-3">
-              <CCol xs={6}></CCol>
-              <CCol xs={6} className="d-flex justify-content-end">
+            <hr className="my-3" />
+            <CRow className="mb-3 align-items-center">
+              <CCol xs={12} md={6} className="d-flex flex-column flex-md-row gap-2">
+                <CCol md="auto" className="flex-grow-1">
+                  <label
+                    className="form-label mb-1"
+                    style={{
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    Account Status:
+                  </label>
+                  <CFormSelect
+                    id="activeFilter"
+                    value={activeFilter}
+                    onChange={(e) => setActiveFilter(e.target.value)}
+                    size="sm"
+                    style={{ cursor: 'pointer', maxWidth: '150px' }}
+                  >
+                    <option value="-1">All</option>
+                    <option value="locked">Locked</option>
+                    <option value="unlocked">Unlocked</option>
+                  </CFormSelect>
+                </CCol>
+              </CCol>
+              <CCol xs={12} md={6} className="d-flex justify-content-md-end">
                 <CFormInput
                   type="text"
                   placeholder="Search user..."
+                  size="sm"
                   style={{ maxWidth: '300px' }}
                   value={searchParam}
                   onChange={(e) => setSearchParam(e.target.value)}
                 />
               </CCol>
             </CRow>
+            <hr className="my-3" />
             <CCol xs={12}>
               <CTable>
                 <CTableHead color="dark">
@@ -371,8 +407,8 @@ const User = () => {
                     ))
                   ) : (
                     <CTableRow>
-                      <CTableDataCell colSpan="7" className="text-center">
-                        No users found
+                      <CTableDataCell colSpan="8" className="text-center py-4">
+                        <span className="text-muted">No users found</span>
                       </CTableDataCell>
                     </CTableRow>
                   )}
