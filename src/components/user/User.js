@@ -131,7 +131,12 @@ const User = () => {
 
   const search = useCallback(async () => {
     try {
-      const data = await searchUsers(currentPage, size, searchParam)
+      // map activeFilter to boolean active param: 'locked' -> false, 'unlocked' -> true
+      let activeParam
+      if (activeFilter === 'locked') activeParam = false
+      else if (activeFilter === 'unlocked') activeParam = true
+
+      const data = await searchUsers(currentPage, size, searchParam, activeParam)
       if (data.status === 200) {
         setUsers(data.data.data.users)
         setTotalElements(data.data.data.total)
@@ -141,7 +146,7 @@ const User = () => {
     } catch (error) {
       toast.error(error.message)
     }
-  }, [currentPage, size, searchParam])
+  }, [currentPage, size, searchParam, activeFilter])
 
   useEffect(() => {
     search()

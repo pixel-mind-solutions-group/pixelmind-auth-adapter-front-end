@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import {
+  CButton,
   CCard,
   CCardBody,
   CCardHeader,
@@ -7,12 +8,16 @@ import {
   CRow,
   CFormInput,
   CFormSelect,
+  CSpinner,
   CTableHeaderCell,
   CTableHead,
   CTable,
   CTableBody,
   CTableRow,
 } from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import { cilSync } from '@coreui/icons'
+import { toast } from 'react-toastify'
 import Pagination from '../pagination/Pagination'
 
 const Application = () => {
@@ -26,6 +31,7 @@ const Application = () => {
   const [realmFilter, setRealmFilter] = useState('-1')
   const [applicationFilter, setApplicationFilter] = useState('-1')
   const [statusFilter, setStatusFilter] = useState('-1')
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const handleResetFilters = () => {
     setRealmFilter('-1')
@@ -33,6 +39,15 @@ const Application = () => {
     setStatusFilter('-1')
     setSearchParam('')
     setCurrentPage(0)
+  }
+
+  const handleSync = () => {
+    setIsSyncing(true)
+    toast.info('Syncing applications...')
+    setTimeout(() => {
+      setIsSyncing(false)
+      toast.success('Applications synced successfully')
+    }, 1500)
   }
 
   return (
@@ -83,27 +98,6 @@ const Application = () => {
                     <option value="-1">All Applications</option>
                   </CFormSelect>
                 </CCol>
-                <CCol md="auto" className="flex-grow-1">
-                  <label
-                    className="form-label mb-1"
-                    style={{
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Status:
-                  </label>
-                  <CFormSelect
-                    id="statusFilter"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    size="sm"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <option value="-1">All Status</option>
-                    <option value="Active">Active</option>
-                    <option value="In_active">In-active</option>
-                  </CFormSelect>
-                </CCol>
               </CCol>
               <CCol xs={12} md={6} className="d-flex justify-content-md-end gap-2">
                 <CFormInput
@@ -117,7 +111,21 @@ const Application = () => {
               </CCol>
             </CRow>
             <CRow className="mb-2">
-              <CCol xs={12}>
+              <CCol xs={12} className="d-flex gap-2">
+                <CButton
+                  color="primary"
+                  size="sm"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="d-inline-flex align-items-center"
+                >
+                  {isSyncing ? (
+                    <CSpinner size="sm" className="me-1" />
+                  ) : (
+                    <CIcon icon={cilSync} className="me-1" />
+                  )}
+                  Sync
+                </CButton>
                 <button
                   className="btn btn-sm btn-outline-secondary"
                   onClick={handleResetFilters}

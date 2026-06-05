@@ -18,14 +18,18 @@ export const createOrModify = async (data) => {
   }
 }
 
-export const searchUsers = (currentPage, size, query) => {
+export const searchUsers = (currentPage, size, query, active) => {
   try {
+    const params = {
+      page: currentPage,
+      size: size,
+    }
+    if (query) params.query = query
+    // only include active when explicitly provided (boolean)
+    if (typeof active === 'boolean') params.active = active
+
     const response = axios.get(`${USER_API_URL}/search`, {
-      params: {
-        page: currentPage,
-        size: size,
-        query: query,
-      },
+      params,
     })
     return response
   } catch (error) {
