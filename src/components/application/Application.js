@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   CButton,
   CCard,
@@ -14,11 +14,17 @@ import {
   CTable,
   CTableBody,
   CTableRow,
+  CTableDataCell,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSync } from '@coreui/icons'
 import { toast } from 'react-toastify'
 import Pagination from '../pagination/Pagination'
+import { getActiveRealms } from '../../service/realm/RealmService'
+import {
+  getActiveApplications,
+  searchApplications,
+} from '../../service/application/ApplicationService'
 
 const Application = () => {
   const [searchParam, setSearchParam] = useState('')
@@ -33,21 +39,102 @@ const Application = () => {
   const [statusFilter, setStatusFilter] = useState('-1')
   const [isSyncing, setIsSyncing] = useState(false)
 
-  const handleResetFilters = () => {
+  const [realmsOptions, setRealmsOptions] = useState([])
+  const [applicationsOptions, setApplicationsOptions] = useState([])
+
+  const fetchDropdownData = useCallback(async () => {
+    try {
+      const realmsRes = await getActiveRealms()
+      if (realmsRes.status === 200) {
+        setRealmsOptions(realmsRes.data)
+      }
+      const appsRes = await getActiveApplications()
+      if (appsRes.status === 200) {
+        setApplicationsOptions(appsRes.data)
+      }
+    } catch (error) {
+      toast.error('Failed to load filter dropdowns: ' + error.message)
+    }
+  }, [])
+
+  const fetchApplications = useCallback(async () => {
+    try {
+      const data = await searchApplications(
+        currentPage,
+        size,
+        searchParam,
+        realmFilter,
+        applicationFilter,
+      )
+      if (data.status === 200) {
+        setApplications(data.data.applications)
+        setTotalElements(data.data.total)
+        setTotalPages(data.data.totalPages)
+        setCurrentPage(data.data.page)
+      }
+    } catch (error) {
+      toast.error('Failed to load applications: ' + error.message)
+    }
+  }, [currentPage, size, searchParam, realmFilter, applicationFilter])
+
+  useEffect(() => {
+    fetchDropdownData()
+  }, [fetchDropdownData])
+
+  useEffect(() => {
+    fetchApplications()
+  }, [fetchApplications])
+
+  const handleResetFilters = async () => {
     setRealmFilter('-1')
     setApplicationFilter('-1')
     setStatusFilter('-1')
     setSearchParam('')
     setCurrentPage(0)
+    try {
+      const appsRes = await getActiveApplications()
+      if (appsRes.status === 200) {
+        setApplicationsOptions(appsRes.data)
+      }
+    } catch (error) {
+      toast.error('Failed to load filter dropdowns: ' + error.message)
+    }
   }
 
-  const handleSync = () => {
+  const handleRealmChange = async (realmId) => {
+    setRealmFilter(realmId)
+    setApplicationFilter('-1')
+    setCurrentPage(0)
+
+    try {
+      if (realmId === '-1') {
+        const appsRes = await getActiveApplications()
+        if (appsRes.status === 200) {
+          setApplicationsOptions(appsRes.data)
+        }
+      } else {
+        const searchRes = await searchApplications(0, 1000, null, realmId, null)
+        if (searchRes.status === 200) {
+          setApplicationsOptions(searchRes.data.applications)
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load applications for dropdown: ' + error.message)
+    }
+  }
+
+  const handleSync = async () => {
     setIsSyncing(true)
     toast.info('Syncing applications...')
-    setTimeout(() => {
-      setIsSyncing(false)
+    try {
+      await fetchDropdownData()
+      await fetchApplications()
       toast.success('Applications synced successfully')
-    }, 1500)
+    } catch (error) {
+      toast.error('Sync failed: ' + error.message)
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   return (
@@ -72,11 +159,16 @@ const Application = () => {
                   <CFormSelect
                     id="realmFilter"
                     value={realmFilter}
-                    onChange={(e) => setRealmFilter(e.target.value)}
+                    onChange={(e) => handleRealmChange(e.target.value)}
                     size="sm"
                     style={{ cursor: 'pointer' }}
                   >
                     <option value="-1">All Realms</option>
+                    {realmsOptions.map((realm) => (
+                      <option key={realm.id} value={realm.id}>
+                        {realm.realm}
+                      </option>
+                    ))}
                   </CFormSelect>
                 </CCol>
                 <CCol md="auto" className="flex-grow-1">
@@ -96,6 +188,11 @@ const Application = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <option value="-1">All Applications</option>
+                    {applicationsOptions.map((app, index) => (
+                      <option key={app.id ? `${app.id}-${index}` : index} value={app.id}>
+                        {app.clientId} ({app.realm?.realm || 'N/A'})
+                      </option>
+                    ))}
                   </CFormSelect>
                 </CCol>
               </CCol>
@@ -142,11 +239,32 @@ const Application = () => {
                   <CTableRow>
                     <CTableHeaderCell scope="col">Realm</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Application</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Description</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">UUID</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Status</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
-                <CTableBody></CTableBody>
+                <CTableBody>
+                  {Array.isArray(applications) && applications.length > 0 ? (
+                    applications.map((app, index) => (
+                      <CTableRow key={app.id ? `${app.id}-${index}` : index}>
+                        <CTableDataCell>{app.realm?.realm || 'N/A'}</CTableDataCell>
+                        <CTableDataCell>{app.clientId}</CTableDataCell>
+                        <CTableDataCell>{app.uuid || 'N/A'}</CTableDataCell>
+                        <CTableDataCell>
+                          <span className={`badge bg-${app.active ? 'success' : 'danger'}`}>
+                            {app.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </CTableDataCell>
+                      </CTableRow>
+                    ))
+                  ) : (
+                    <CTableRow>
+                      <CTableDataCell colSpan="4" className="text-center py-4">
+                        <span className="text-muted">No applications found</span>
+                      </CTableDataCell>
+                    </CTableRow>
+                  )}
+                </CTableBody>
               </CTable>
               <Pagination
                 currentPage={currentPage}
