@@ -399,14 +399,13 @@ const User = () => {
                           >
                             Edit
                           </CButton>{' '}
-                          <CButton
+                          <button
                             type="button"
-                            color="danger"
-                            size="sm"
+                            className="btn btn-sm btn-outline-danger"
                             onClick={() => confirmDelete(user)}
                           >
                             Delete
-                          </CButton>
+                          </button>
                         </CTableDataCell>
                       </CTableRow>
                     ))
@@ -452,9 +451,13 @@ const User = () => {
           <CButton color="secondary" onClick={cancelDelete} disabled={isDeleting}>
             Cancel
           </CButton>
-          <CButton color="danger" onClick={deleteUser} disabled={isDeleting}>
+          <button
+            className="btn btn-sm btn-outline-danger"
+            onClick={deleteUser}
+            disabled={isDeleting}
+          >
             {isDeleting ? 'Deleting...' : 'Delete'}
-          </CButton>
+          </button>
         </CModalFooter>
       </CModal>
     </CRow>
