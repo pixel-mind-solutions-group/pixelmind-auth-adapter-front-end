@@ -40,11 +40,6 @@ const _nav = [
         name: 'User Role',
         to: '/user-role/user-role',
       },
-      {
-        component: CNavItem,
-        name: 'Map UI Permissions',
-        to: '/user-role/map-ui-permissions',
-      },
     ],
   },
   // {
