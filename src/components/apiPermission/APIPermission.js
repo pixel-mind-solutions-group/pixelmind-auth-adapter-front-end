@@ -76,6 +76,11 @@ const APIPermission = () => {
   const [mappingSearchParam, setMappingSearchParam] = useState('')
   const [assignedMappings, setAssignedMappings] = useState([])
 
+  // Filtration section state
+  const [filterRealmId, setFilterRealmId] = useState('-1')
+  const [filterApplicationId, setFilterApplicationId] = useState('-1')
+  const [filterApplicationsOptions, setFilterApplicationsOptions] = useState([])
+
   // Fetch API Permissions for definitions tab
   const fetchPermissions = useCallback(async () => {
     try {
@@ -118,16 +123,19 @@ const APIPermission = () => {
     }
   }, [])
 
-  const fetchAssignedMappings = useCallback(async () => {
+  const fetchAssignedMappings = useCallback(async (realmId = filterRealmId, appId = filterApplicationId) => {
     try {
-      const res = await searchAssignedPermissions()
+      const res = await searchAssignedPermissions(
+        realmId === '-1' ? null : realmId,
+        appId === '-1' ? null : appId
+      )
       if (res.status === 200) {
         setAssignedMappings(res.data || [])
       }
     } catch (error) {
       toast.error('Failed to load assigned mappings: ' + error.message)
     }
-  }, [])
+  }, [filterRealmId, filterApplicationId])
 
   const fetchDropdownData = useCallback(async () => {
     try {
@@ -138,6 +146,7 @@ const APIPermission = () => {
       const appsRes = await getActiveApplications()
       if (appsRes.status === 200) {
         setApplicationsOptions(appsRes.data || [])
+        setFilterApplicationsOptions(appsRes.data || [])
       }
     } catch (error) {
       toast.error('Failed to load dropdown filters: ' + error.message)
@@ -148,11 +157,19 @@ const APIPermission = () => {
     if (activeTab === 'profile') {
       const timer = setTimeout(() => {
         fetchDropdownData()
-        fetchAssignedMappings()
       }, 0)
       return () => clearTimeout(timer)
     }
-  }, [activeTab, fetchDropdownData, fetchAssignedMappings])
+  }, [activeTab, fetchDropdownData])
+
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      const timer = setTimeout(() => {
+        fetchAssignedMappings(filterRealmId, filterApplicationId)
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [activeTab, fetchAssignedMappings, filterRealmId, filterApplicationId])
 
   // Handle form changes for input text fields in Tab 1
   const handleFormChange = (e) => {
@@ -396,6 +413,34 @@ const APIPermission = () => {
       .catch((error) => {
         toast.error('Failed to reset applications: ' + error.message)
       })
+  }
+
+  const handleFilterRealmChange = async (realmId) => {
+    setFilterRealmId(realmId)
+    setFilterApplicationId('-1')
+
+    try {
+      if (realmId === '-1') {
+        setFilterApplicationsOptions(applicationsOptions)
+      } else {
+        const searchRes = await searchApplications(0, 1000, null, realmId, null)
+        if (searchRes.status === 200) {
+          setFilterApplicationsOptions(searchRes.data.applications || [])
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load filter applications: ' + error.message)
+    }
+  }
+
+  const handleFilterApplicationChange = (appId) => {
+    setFilterApplicationId(appId)
+  }
+
+  const handleFilterClear = () => {
+    setFilterRealmId('-1')
+    setFilterApplicationId('-1')
+    setFilterApplicationsOptions(applicationsOptions)
   }
 
   const getGroupedMappings = () => {
@@ -839,6 +884,62 @@ const APIPermission = () => {
                     <strong>Assigned API Permissions Profiles</strong>
                   </CCardHeader>
                   <CCardBody>
+                    {/* Filtration Section */}
+                    <div
+                      className="row g-3 mb-4 pb-3 border-bottom align-items-end"
+                      style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                    >
+                      <CCol xs={12} sm={4}>
+                        <CFormLabel htmlFor="filterRealmSelect" className="text-muted small font-weight-bold">
+                          Filter by Realm
+                        </CFormLabel>
+                        <CFormSelect
+                          id="filterRealmSelect"
+                          value={filterRealmId}
+                          onChange={(e) => handleFilterRealmChange(e.target.value)}
+                          style={{ cursor: 'pointer' }}
+                          size="sm"
+                        >
+                          <option value="-1">All Realms</option>
+                          {realmsOptions.map((realm) => (
+                            <option key={realm.id} value={realm.id}>
+                              {realm.realm}
+                            </option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+
+                      <CCol xs={12} sm={4}>
+                        <CFormLabel htmlFor="filterAppSelect" className="text-muted small font-weight-bold">
+                          Filter by Application
+                        </CFormLabel>
+                        <CFormSelect
+                          id="filterAppSelect"
+                          value={filterApplicationId}
+                          onChange={(e) => handleFilterApplicationChange(e.target.value)}
+                          style={{ cursor: 'pointer' }}
+                          size="sm"
+                        >
+                          <option value="-1">All Applications</option>
+                          {filterApplicationsOptions.map((app, index) => (
+                            <option key={app.id ? `${app.id}-${index}` : index} value={app.id}>
+                              {app.clientId} ({app.realm?.realm || 'N/A'})
+                            </option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+
+                      <CCol xs={12} sm={4}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary w-100"
+                          onClick={handleFilterClear}
+                        >
+                          Clear Filters
+                        </button>
+                      </CCol>
+                    </div>
+
                     {Object.keys(getGroupedMappings()).length > 0 ? (
                       Object.entries(getGroupedMappings()).map(([realmName, apps]) => (
                         <div key={realmName} className="mb-4">
