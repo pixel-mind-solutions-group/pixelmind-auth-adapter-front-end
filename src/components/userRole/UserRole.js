@@ -44,8 +44,14 @@ import {
 import {
   createUserRoleProfile,
   searchUserRoleProfiles,
-  deleteUserRoleProfile,
+  deleteUserRoleApiProfile,
+  deleteUserRoleUiProfile,
+  syncUserRoleProfile,
 } from '../../service/userRoleProfile/UserRoleProfileService'
+import { getActivePermissions as getActiveApiPermissions } from '../../service/apiPermission/ApiPermissionService'
+import { getActivePermissions as getActiveUiPermissions } from '../../service/uiPermission/UiPermissionService'
+import { searchModuleAssignedPermissions as searchModuleAssignedApiPermissions } from '../../service/moduleHasApiPermission/ModuleHasApiPermissionService'
+import { searchModuleAssignedPermissions as searchModuleAssignedUiPermissions } from '../../service/moduleHasUiPermission/ModuleHasUiPermissionService'
 
 const UserRole = () => {
   // Navigation tabs state: 'definitions' or 'profile'
@@ -88,6 +94,11 @@ const UserRole = () => {
   const [applicationId, setApplicationId] = useState('-1')
   const [modulesOptions, setModulesOptions] = useState([])
   const [selectedModuleIds, setSelectedModuleIds] = useState([])
+  const [profileLoading, setProfileLoading] = useState(false)
+
+  // Track API and UI permissions options & selections per module (key: moduleId or 'app')
+  const [modulePermissionsOptions, setModulePermissionsOptions] = useState({})
+  const [modulePermissions, setModulePermissions] = useState({})
 
   // Searchable User Role select
   const [activeUserRoles, setActiveUserRoles] = useState([])
@@ -100,6 +111,13 @@ const UserRole = () => {
   const [filterRealmId, setFilterRealmId] = useState('-1')
   const [filterApplicationId, setFilterApplicationId] = useState('-1')
   const [filterApplicationsOptions, setFilterApplicationsOptions] = useState([])
+  const [filterModuleId, setFilterModuleId] = useState('-1')
+  const [filterModulesOptions, setFilterModulesOptions] = useState([])
+  const [filterActiveUserRoles, setFilterActiveUserRoles] = useState([])
+  const [filterRoleSearchQuery, setFilterRoleSearchQuery] = useState('')
+  const [filterSelectedRole, setFilterSelectedRole] = useState(null)
+  const [filterRoleDropdownOpen, setFilterRoleDropdownOpen] = useState(false)
+  const filterRoleDropdownRef = useRef(null)
   const [assignedProfiles, setAssignedProfiles] = useState([])
 
   // Profile deletion modal
@@ -111,6 +129,9 @@ const UserRole = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setRoleDropdownOpen(false)
+      }
+      if (filterRoleDropdownRef.current && !filterRoleDropdownRef.current.contains(event.target)) {
+        setFilterRoleDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -153,7 +174,7 @@ const UserRole = () => {
         searchParam,
         activeParam,
         defFilterRealmId === '-1' ? null : defFilterRealmId,
-        defFilterApplicationId === '-1' ? null : defFilterApplicationId
+        defFilterApplicationId === '-1' ? null : defFilterApplicationId,
       )
       if (data.status === 200) {
         setRoles(data.data.roles || [])
@@ -348,19 +369,29 @@ const UserRole = () => {
   }
 
   // ==================== TAB 2 LOGIC (PROFILE MAPPING) ====================
-  const fetchAssignedProfiles = useCallback(async (rId = filterRealmId, aId = filterApplicationId) => {
-    try {
-      const res = await searchUserRoleProfiles(
-        rId === '-1' ? null : rId,
-        aId === '-1' ? null : aId
-      )
-      if (res.status === 200) {
-        setAssignedProfiles(res.data || [])
+  const fetchAssignedProfiles = useCallback(
+    async (
+      rId = filterRealmId,
+      aId = filterApplicationId,
+      mId = filterModuleId,
+      roleId = filterSelectedRole ? filterSelectedRole.roleId : '-1',
+    ) => {
+      try {
+        const res = await searchUserRoleProfiles(
+          rId === '-1' ? null : rId,
+          aId === '-1' ? null : aId,
+          roleId === '-1' ? null : roleId,
+          mId === '-1' ? null : mId,
+        )
+        if (res.status === 200) {
+          setAssignedProfiles(res.data || [])
+        }
+      } catch (error) {
+        toast.error('Failed to load assigned profiles: ' + error.message)
       }
-    } catch (error) {
-      toast.error('Failed to load assigned profiles: ' + error.message)
-    }
-  }, [filterRealmId, filterApplicationId])
+    },
+    [filterRealmId, filterApplicationId, filterModuleId, filterSelectedRole],
+  )
 
   useEffect(() => {
     if (activeTab === 'profile') {
@@ -387,6 +418,177 @@ const UserRole = () => {
     }
   }
 
+  const fetchModulePermissions = async (
+    mId,
+    currentRealmId = realmId,
+    currentAppId = applicationId,
+  ) => {
+    if (!currentRealmId || !currentAppId || currentRealmId === '-1' || currentAppId === '-1') {
+      return
+    }
+
+    try {
+      let apiOptions = []
+      let uiOptions = []
+
+      if (mId !== 'app') {
+        // Fetch API permissions for the module
+        const apiRes = await searchModuleAssignedApiPermissions(currentRealmId, currentAppId, mId)
+        if (apiRes.status === 200 && apiRes.data && apiRes.data.length > 0) {
+          apiOptions = apiRes.data.map((item) => ({
+            apiPermissionId: item.apiPermissionId,
+            apiPermissionName: item.apiPermission?.apiPermissionName,
+            description: item.apiPermission?.description,
+          }))
+        } else {
+          // Fallback to active app-level permissions
+          const fallbackRes = await getActiveApiPermissions(currentRealmId, currentAppId)
+          if (fallbackRes.status === 200) {
+            apiOptions = fallbackRes.data || []
+          }
+        }
+
+        // Fetch UI permissions for the module
+        const uiRes = await searchModuleAssignedUiPermissions(currentRealmId, currentAppId, mId)
+        if (uiRes.status === 200 && uiRes.data && uiRes.data.length > 0) {
+          uiOptions = uiRes.data.map((item) => ({
+            uiPermissionId: item.uiPermissionId,
+            uiPermissionName: item.uiPermission?.uiPermissionName,
+            description: item.uiPermission?.description,
+          }))
+        } else {
+          // Fallback to active app-level permissions
+          const fallbackRes = await getActiveUiPermissions(currentRealmId, currentAppId)
+          if (fallbackRes.status === 200) {
+            uiOptions = fallbackRes.data || []
+          }
+        }
+      } else {
+        // Load global/application-level permissions directly
+        const apiRes = await getActiveApiPermissions(currentRealmId, currentAppId)
+        if (apiRes.status === 200) {
+          apiOptions = apiRes.data || []
+        }
+
+        const uiRes = await getActiveUiPermissions(currentRealmId, currentAppId)
+        if (uiRes.status === 200) {
+          uiOptions = uiRes.data || []
+        }
+      }
+
+      setModulePermissionsOptions((prev) => ({
+        ...prev,
+        [mId]: { api: apiOptions, ui: uiOptions },
+      }))
+      return { api: apiOptions, ui: uiOptions }
+    } catch (error) {
+      toast.error('Failed to load permissions: ' + error.message)
+      return { api: [], ui: [] }
+    }
+  }
+
+  const loadExistingMappingForRole = async (
+    role,
+    currentRealmId = realmId,
+    currentAppId = applicationId,
+    currentMods = modulesOptions,
+  ) => {
+    if (
+      !role ||
+      !currentRealmId ||
+      !currentAppId ||
+      currentRealmId === '-1' ||
+      currentAppId === '-1'
+    ) {
+      return
+    }
+    setProfileLoading(true)
+    try {
+      const res = await searchUserRoleProfiles(currentRealmId, currentAppId, role.roleId)
+      if (res.status === 200 && res.data) {
+        const apiPerms = res.data.apiPermissions || []
+        const uiPerms = res.data.uiPermissions || []
+
+        const nextPermissions = {}
+
+        if (currentMods.length > 0) {
+          const moduleIdsMapped = new Set()
+          apiPerms.forEach((p) => {
+            if (p.moduleId) moduleIdsMapped.add(p.moduleId)
+          })
+          uiPerms.forEach((p) => {
+            if (p.moduleId) moduleIdsMapped.add(p.moduleId)
+          })
+
+          const moduleIdsArray = Array.from(moduleIdsMapped)
+          setSelectedModuleIds(moduleIdsArray)
+
+          // Fetch options for mapped modules in parallel
+          await Promise.all(
+            moduleIdsArray.map((mId) => fetchModulePermissions(mId, currentRealmId, currentAppId)),
+          )
+
+          apiPerms.forEach((p) => {
+            if (p.moduleId) {
+              if (!nextPermissions[p.moduleId]) {
+                nextPermissions[p.moduleId] = { api: [], ui: [] }
+              }
+              if (!nextPermissions[p.moduleId].api.includes(p.apiPermissionId)) {
+                nextPermissions[p.moduleId].api.push(p.apiPermissionId)
+              }
+            }
+          })
+
+          uiPerms.forEach((p) => {
+            if (p.moduleId) {
+              if (!nextPermissions[p.moduleId]) {
+                nextPermissions[p.moduleId] = { api: [], ui: [] }
+              }
+              if (!nextPermissions[p.moduleId].ui.includes(p.uiPermissionId)) {
+                nextPermissions[p.moduleId].ui.push(p.uiPermissionId)
+              }
+            }
+          })
+        } else {
+          await fetchModulePermissions('app', currentRealmId, currentAppId)
+          nextPermissions['app'] = { api: [], ui: [] }
+
+          apiPerms.forEach((p) => {
+            if (!p.moduleId) {
+              if (!nextPermissions['app'].api.includes(p.apiPermissionId)) {
+                nextPermissions['app'].api.push(p.apiPermissionId)
+              }
+            }
+          })
+
+          uiPerms.forEach((p) => {
+            if (!p.moduleId) {
+              if (!nextPermissions['app'].ui.includes(p.uiPermissionId)) {
+                nextPermissions['app'].ui.push(p.uiPermissionId)
+              }
+            }
+          })
+        }
+
+        setModulePermissions(nextPermissions)
+      }
+    } catch (error) {
+      toast.error('Failed to load existing profile mappings for role: ' + error.message)
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedRole && realmId !== '-1' && applicationId !== '-1') {
+      loadExistingMappingForRole(selectedRole, realmId, applicationId, modulesOptions)
+    } else {
+      setSelectedModuleIds([])
+      setModulePermissions({})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRole, realmId, applicationId, modulesOptions])
+
   const handleRealmChange = async (rId) => {
     setRealmId(rId)
     setApplicationId('-1')
@@ -395,6 +597,8 @@ const UserRole = () => {
     setSelectedRole(null)
     setRoleSearchQuery('')
     setActiveUserRoles([])
+    setModulePermissionsOptions({})
+    setModulePermissions({})
 
     try {
       if (rId === '-1') {
@@ -420,39 +624,129 @@ const UserRole = () => {
     setSelectedRole(null)
     setRoleSearchQuery('')
     setActiveUserRoles([])
+    setModulePermissionsOptions({})
+    setModulePermissions({})
 
     if (realmId !== '-1' && appId !== '-1') {
       try {
         const modulesRes = await searchModules(0, 1000, null, realmId, appId, true)
+        let hasModules = false
         if (modulesRes.status === 200) {
-          setModulesOptions(modulesRes.data.modules || [])
+          const mods = modulesRes.data.modules || []
+          setModulesOptions(mods)
+          hasModules = mods.length > 0
         }
         fetchActiveRoles(realmId, appId)
+        if (!hasModules) {
+          fetchModulePermissions('app', realmId, appId)
+        }
       } catch (error) {
-        toast.error('Failed to load modules/roles: ' + error.message)
+        toast.error('Failed to load modules/roles/permissions: ' + error.message)
       }
     }
   }
 
   const handleModuleCheckboxChange = (modId) => {
     setSelectedModuleIds((prev) => {
-      if (prev.includes(modId)) {
-        return prev.filter((id) => id !== modId)
+      const isChecked = prev.includes(modId)
+      const next = isChecked ? prev.filter((id) => id !== modId) : [...prev, modId]
+
+      if (!isChecked) {
+        fetchModulePermissions(modId)
       } else {
-        return [...prev, modId]
+        setModulePermissions((prevSel) => {
+          const nextSel = { ...prevSel }
+          delete nextSel[modId]
+          return nextSel
+        })
       }
+      return next
     })
   }
 
-  const handleModuleSelectAll = () => {
+  const handleModuleSelectAll = async () => {
     const allModuleIds = modulesOptions.map((m) => m.moduleId)
     const allSelected = allModuleIds.every((id) => selectedModuleIds.includes(id))
 
     if (allSelected) {
       setSelectedModuleIds([])
+      setModulePermissions({})
     } else {
       setSelectedModuleIds(allModuleIds)
+      for (const mId of allModuleIds) {
+        await fetchModulePermissions(mId)
+      }
     }
+  }
+
+  const handleNestedApiPermissionCheckboxChange = (modId, permId) => {
+    setModulePermissions((prev) => {
+      const modPerms = prev[modId] || { api: [], ui: [] }
+      const newApi = modPerms.api.includes(permId)
+        ? modPerms.api.filter((id) => id !== permId)
+        : [...modPerms.api, permId]
+
+      return {
+        ...prev,
+        [modId]: {
+          ...modPerms,
+          api: newApi,
+        },
+      }
+    })
+  }
+
+  const handleNestedApiSelectAll = (modId) => {
+    const options = modulePermissionsOptions[modId]?.api || []
+    const allIds = options.map((p) => p.apiPermissionId)
+    const selectedIds = modulePermissions[modId]?.api || []
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.includes(id))
+
+    setModulePermissions((prev) => {
+      const modPerms = prev[modId] || { api: [], ui: [] }
+      return {
+        ...prev,
+        [modId]: {
+          ...modPerms,
+          api: allSelected ? [] : allIds,
+        },
+      }
+    })
+  }
+
+  const handleNestedUiPermissionCheckboxChange = (modId, permId) => {
+    setModulePermissions((prev) => {
+      const modPerms = prev[modId] || { api: [], ui: [] }
+      const newUi = modPerms.ui.includes(permId)
+        ? modPerms.ui.filter((id) => id !== permId)
+        : [...modPerms.ui, permId]
+
+      return {
+        ...prev,
+        [modId]: {
+          ...modPerms,
+          ui: newUi,
+        },
+      }
+    })
+  }
+
+  const handleNestedUiSelectAll = (modId) => {
+    const options = modulePermissionsOptions[modId]?.ui || []
+    const allIds = options.map((p) => p.uiPermissionId)
+    const selectedIds = modulePermissions[modId]?.ui || []
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.includes(id))
+
+    setModulePermissions((prev) => {
+      const modPerms = prev[modId] || { api: [], ui: [] }
+      return {
+        ...prev,
+        [modId]: {
+          ...modPerms,
+          ui: allSelected ? [] : allIds,
+        },
+      }
+    })
   }
 
   const handleMappingFormSubmit = async (event) => {
@@ -464,24 +758,43 @@ const UserRole = () => {
       return
     }
 
+    const modulesList = []
+    if (modulesOptions.length > 0) {
+      selectedModuleIds.forEach((modId) => {
+        const perms = modulePermissions[modId] || { api: [], ui: [] }
+        modulesList.push({
+          moduleId: Number(modId),
+          apiPermissionIdList: perms.api || [],
+          uiPermissionIdList: perms.ui || [],
+        })
+      })
+    } else {
+      const appPerms = modulePermissions['app'] || { api: [], ui: [] }
+      modulesList.push({
+        moduleId: null,
+        apiPermissionIdList: appPerms.api || [],
+        uiPermissionIdList: appPerms.ui || [],
+      })
+    }
+
     const payload = {
       realmId: Number(realmId),
       applicationId: Number(applicationId),
       userRoleId: Number(selectedRole.roleId),
-      moduleIdList: selectedModuleIds.length > 0 ? selectedModuleIds : [null],
+      modules: modulesList,
     }
 
     try {
-      const res = await createUserRoleProfile(payload)
-      if (res.status === 201 || res.status === 200) {
-        toast.success(res.message || 'User Role Profile mapped successfully!')
+      const res = await syncUserRoleProfile(payload)
+      if (res.status === 200 || res.status === 201) {
+        toast.success(res.message || 'User Role Profile mappings synchronized successfully!')
         fetchAssignedProfiles()
         handleMappingReset()
       } else {
         toast.info(res.message)
       }
     } catch (error) {
-      toast.error(error.message || 'Failed to create role profile.')
+      toast.error(error.message || 'Failed to map user role profile.')
     }
   }
 
@@ -490,6 +803,8 @@ const UserRole = () => {
     setApplicationId('-1')
     setModulesOptions([])
     setSelectedModuleIds([])
+    setModulePermissionsOptions({})
+    setModulePermissions({})
     setSelectedRole(null)
     setRoleSearchQuery('')
     setRoleDropdownOpen(false)
@@ -500,6 +815,11 @@ const UserRole = () => {
   const handleFilterRealmChange = async (rId) => {
     setFilterRealmId(rId)
     setFilterApplicationId('-1')
+    setFilterModuleId('-1')
+    setFilterModulesOptions([])
+    setFilterActiveUserRoles([])
+    setFilterRoleSearchQuery('')
+    setFilterSelectedRole(null)
 
     try {
       if (rId === '-1') {
@@ -513,19 +833,128 @@ const UserRole = () => {
     } catch (error) {
       toast.error('Failed to load filter applications: ' + error.message)
     }
-    fetchAssignedProfiles(rId, '-1')
+    fetchAssignedProfiles(rId, '-1', '-1', '-1')
   }
 
-  const handleFilterApplicationChange = (appId) => {
+  const handleFilterApplicationChange = async (appId) => {
     setFilterApplicationId(appId)
-    fetchAssignedProfiles(filterRealmId, appId)
+    setFilterModuleId('-1')
+    setFilterModulesOptions([])
+    setFilterActiveUserRoles([])
+    setFilterRoleSearchQuery('')
+    setFilterSelectedRole(null)
+
+    if (filterRealmId !== '-1' && appId !== '-1') {
+      try {
+        const modulesRes = await searchModules(0, 1000, null, filterRealmId, appId, true)
+        if (modulesRes.status === 200) {
+          setFilterModulesOptions(modulesRes.data.modules || [])
+        }
+        const rolesRes = await getActiveUserRoles(filterRealmId, appId)
+        if (rolesRes.status === 200) {
+          setFilterActiveUserRoles(rolesRes.data || [])
+        }
+      } catch (error) {
+        toast.error('Failed to load filter modules/roles: ' + error.message)
+      }
+    }
+
+    fetchAssignedProfiles(filterRealmId, appId, '-1', '-1')
   }
 
   const handleFilterClear = () => {
     setFilterRealmId('-1')
     setFilterApplicationId('-1')
+    setFilterModuleId('-1')
+    setFilterModulesOptions([])
+    setFilterActiveUserRoles([])
+    setFilterRoleSearchQuery('')
+    setFilterSelectedRole(null)
     setFilterApplicationsOptions(applicationsOptions)
-    fetchAssignedProfiles('-1', '-1')
+    fetchAssignedProfiles('-1', '-1', '-1', '-1')
+  }
+
+  const handleFilterModuleChange = (modId) => {
+    setFilterModuleId(modId)
+    fetchAssignedProfiles(
+      filterRealmId,
+      filterApplicationId,
+      modId,
+      filterSelectedRole ? filterSelectedRole.roleId : '-1',
+    )
+  }
+
+  const handleFilterRoleSelect = (role) => {
+    setFilterSelectedRole(role)
+    setFilterRoleSearchQuery(role ? role.roleName : '')
+    setFilterRoleDropdownOpen(false)
+    fetchAssignedProfiles(
+      filterRealmId,
+      filterApplicationId,
+      filterModuleId,
+      role ? role.roleId : '-1',
+    )
+  }
+
+  const handleFilterRoleClear = () => {
+    setFilterSelectedRole(null)
+    setFilterRoleSearchQuery('')
+    setFilterRoleDropdownOpen(false)
+    fetchAssignedProfiles(
+      filterRealmId,
+      filterApplicationId,
+      filterModuleId,
+      '-1',
+    )
+  }
+
+  const handleEditProfile = async (rId, appId, role) => {
+    // Set basic states
+    setRealmId(rId)
+    setApplicationId(appId)
+    setSelectedRole(role)
+    setRoleSearchQuery(role.roleName)
+    setSelectedModuleIds([])
+    setModulesOptions([])
+    setModulePermissionsOptions({})
+    setModulePermissions({})
+
+    try {
+      // 1. Fetch applications for the selected realm
+      if (rId !== '-1') {
+        const searchRes = await searchApplications(0, 1000, null, rId, null)
+        if (searchRes.status === 200) {
+          setApplicationsOptions(searchRes.data.applications || [])
+        }
+      }
+      
+      // 2. Fetch modules and user roles for the application
+      if (rId !== '-1' && appId !== '-1') {
+        const modulesRes = await searchModules(0, 1000, null, rId, appId, true)
+        let hasModules = false
+        let mods = []
+        if (modulesRes.status === 200) {
+          mods = modulesRes.data.modules || []
+          setModulesOptions(mods)
+          hasModules = mods.length > 0
+        }
+        
+        await fetchActiveRoles(rId, appId)
+        
+        if (!hasModules) {
+          await fetchModulePermissions('app', rId, appId)
+        }
+        
+        // 3. Load mapped permissions for checkbox checking
+        await loadExistingMappingForRole(role, rId, appId, mods)
+      }
+
+      // 4. Scroll to mapping form and notify
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      toast.success(`Populated fields to edit profile for role: ${role.roleName}`)
+    } catch (error) {
+      toast.error('Failed to load profile for editing: ' + error.message)
+    }
   }
 
   const confirmDeleteProfile = (profile) => {
@@ -541,7 +970,12 @@ const UserRole = () => {
   const executeDeleteProfile = async () => {
     if (!profileToDelete) return
     try {
-      const res = await deleteUserRoleProfile(profileToDelete.id)
+      let res
+      if (profileToDelete.permissionType === 'api') {
+        res = await deleteUserRoleApiProfile(profileToDelete.id)
+      } else {
+        res = await deleteUserRoleUiProfile(profileToDelete.id)
+      }
       if (res.status === 200) {
         toast.success(res.message || 'Mapping deleted successfully!')
         fetchAssignedProfiles()
@@ -558,27 +992,54 @@ const UserRole = () => {
   const filteredRoles = activeUserRoles.filter(
     (role) =>
       role.roleName.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
-      (role.description && role.description.toLowerCase().includes(roleSearchQuery.toLowerCase()))
+      (role.description && role.description.toLowerCase().includes(roleSearchQuery.toLowerCase())),
+  )
+
+  const filteredFilterRoles = filterActiveUserRoles.filter(
+    (role) =>
+      role.roleName.toLowerCase().includes(filterRoleSearchQuery.toLowerCase()) ||
+      (role.description && role.description.toLowerCase().includes(filterRoleSearchQuery.toLowerCase())),
   )
 
   const getGroupedProfiles = () => {
     const grouped = {}
-    assignedProfiles.forEach((profile) => {
+    const apiPerms = assignedProfiles?.apiPermissions || []
+    const uiPerms = assignedProfiles?.uiPermissions || []
+
+    apiPerms.forEach((profile) => {
       const realmName = profile.realm?.realm || 'Unknown Realm'
       const appName = profile.application?.clientId || 'Unknown Application'
       const roleName = profile.userRole?.roleName || 'Unknown Role'
+      const moduleName = profile.module?.moduleName || 'Application Level'
 
-      if (!grouped[realmName]) {
-        grouped[realmName] = {}
-      }
-      if (!grouped[realmName][appName]) {
-        grouped[realmName][appName] = {}
-      }
+      if (!grouped[realmName]) grouped[realmName] = {}
+      if (!grouped[realmName][appName]) grouped[realmName][appName] = {}
       if (!grouped[realmName][appName][roleName]) {
-        grouped[realmName][appName][roleName] = []
+        grouped[realmName][appName][roleName] = {}
       }
-      grouped[realmName][appName][roleName].push(profile)
+      if (!grouped[realmName][appName][roleName][moduleName]) {
+        grouped[realmName][appName][roleName][moduleName] = { api: [], ui: [] }
+      }
+      grouped[realmName][appName][roleName][moduleName].api.push(profile)
     })
+
+    uiPerms.forEach((profile) => {
+      const realmName = profile.realm?.realm || 'Unknown Realm'
+      const appName = profile.application?.clientId || 'Unknown Application'
+      const roleName = profile.userRole?.roleName || 'Unknown Role'
+      const moduleName = profile.module?.moduleName || 'Application Level'
+
+      if (!grouped[realmName]) grouped[realmName] = {}
+      if (!grouped[realmName][appName]) grouped[realmName][appName] = {}
+      if (!grouped[realmName][appName][roleName]) {
+        grouped[realmName][appName][roleName] = {}
+      }
+      if (!grouped[realmName][appName][roleName][moduleName]) {
+        grouped[realmName][appName][roleName][moduleName] = { api: [], ui: [] }
+      }
+      grouped[realmName][appName][roleName][moduleName].ui.push(profile)
+    })
+
     return grouped
   }
 
@@ -601,8 +1062,9 @@ const UserRole = () => {
             >
               <button
                 type="button"
-                className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
-                  }`}
+                className={`btn btn-sm rounded px-3 py-2 border-0 ${
+                  activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
+                }`}
                 style={{
                   color: activeTab === 'definitions' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
                   backgroundColor: activeTab === 'definitions' ? '' : 'transparent',
@@ -615,8 +1077,9 @@ const UserRole = () => {
               </button>
               <button
                 type="button"
-                className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
-                  }`}
+                className={`btn btn-sm rounded px-3 py-2 border-0 ${
+                  activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
+                }`}
                 style={{
                   color: activeTab === 'profile' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
                   backgroundColor: activeTab === 'profile' ? '' : 'transparent',
@@ -640,7 +1103,10 @@ const UserRole = () => {
                 >
                   {/* Realm Select */}
                   <CCol xs={12} md={4}>
-                    <CFormLabel htmlFor="defRealmSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="defRealmSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Realm
                     </CFormLabel>
                     <CFormSelect
@@ -665,7 +1131,10 @@ const UserRole = () => {
 
                   {/* Application Select */}
                   <CCol xs={12} md={4}>
-                    <CFormLabel htmlFor="defAppSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="defAppSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Application
                     </CFormLabel>
                     <CFormSelect
@@ -690,10 +1159,7 @@ const UserRole = () => {
 
                   {/* Role Name */}
                   <CCol xs={12} md={4}>
-                    <CFormLabel
-                      htmlFor="roleName"
-                      className="text-muted small font-weight-bold"
-                    >
+                    <CFormLabel htmlFor="roleName" className="text-muted small font-weight-bold">
                       Role Name
                     </CFormLabel>
                     <CFormInput
@@ -747,8 +1213,13 @@ const UserRole = () => {
 
                   {/* Form Submission Buttons */}
                   <CCol xs={12} md={4} className="d-flex flex-column justify-content-end">
-                    <CFormLabel className="small font-weight-bold" style={{ visibility: 'hidden' }}>Spacer</CFormLabel>
-                    <div className="d-flex gap-2 justify-content-end" style={{ height: '31px', alignItems: 'center' }}>
+                    <CFormLabel className="small font-weight-bold" style={{ visibility: 'hidden' }}>
+                      Spacer
+                    </CFormLabel>
+                    <div
+                      className="d-flex gap-2 justify-content-end"
+                      style={{ height: '31px', alignItems: 'center' }}
+                    >
                       <CButton color="primary" type="submit" size="sm" className="px-4">
                         {formData.id ? 'Update' : 'Create'}
                       </CButton>
@@ -771,7 +1242,10 @@ const UserRole = () => {
                   style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
                 >
                   <CCol xs={12} sm={3}>
-                    <CFormLabel htmlFor="defFilterRealmSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="defFilterRealmSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Filter by Realm
                     </CFormLabel>
                     <CFormSelect
@@ -791,7 +1265,10 @@ const UserRole = () => {
                   </CCol>
 
                   <CCol xs={12} sm={3}>
-                    <CFormLabel htmlFor="defFilterAppSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="defFilterAppSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Filter by Application
                     </CFormLabel>
                     <CFormSelect
@@ -861,15 +1338,11 @@ const UserRole = () => {
                     <CTableBody>
                       {Array.isArray(roles) && roles.length > 0 ? (
                         roles.map((role, index) => (
-                          <CTableRow
-                            key={role.roleId ? `${role.roleId}-${index}` : index}
-                          >
+                          <CTableRow key={role.roleId ? `${role.roleId}-${index}` : index}>
                             <CTableDataCell className="font-weight-semibold">
                               {role.realm?.realm || 'N/A'}
                             </CTableDataCell>
-                            <CTableDataCell>
-                              {role.application?.clientId || 'N/A'}
-                            </CTableDataCell>
+                            <CTableDataCell>{role.application?.clientId || 'N/A'}</CTableDataCell>
                             <CTableDataCell className="font-weight-bold text-info">
                               {role.roleName}
                             </CTableDataCell>
@@ -984,9 +1457,7 @@ const UserRole = () => {
 
                   {/* Searchable User Role Dropdown */}
                   <CCol xs={12} sm={12} md={4}>
-                    <CFormLabel className="text-muted small font-weight-bold">
-                      User Role
-                    </CFormLabel>
+                    <CFormLabel className="text-muted small font-weight-bold">User Role</CFormLabel>
                     <div ref={dropdownRef} style={{ position: 'relative' }}>
                       <CFormInput
                         type="text"
@@ -1045,7 +1516,9 @@ const UserRole = () => {
                               </button>
                             ))
                           ) : (
-                            <div className="dropdown-item text-muted disabled">No matching roles found for this Realm/Application</div>
+                            <div className="dropdown-item text-muted disabled">
+                              No matching roles found for this Realm/Application
+                            </div>
                           )}
                         </div>
                       )}
@@ -1057,90 +1530,438 @@ const UserRole = () => {
                     </div>
                   </CCol>
 
-                  {/* Modules Checklist */}
+                  {/* Modules checklist layout when modules exist */}
                   {realmId !== '-1' && applicationId !== '-1' && (
-                    <CCol xs={12} className="mt-4">
-                      <CCard
-                        className="border-0 shadow-sm"
-                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
-                      >
-                        <CCardHeader
-                          className="bg-transparent py-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
-                          style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                    <>
+                      {profileLoading ? (
+                        <CCol
+                          xs={12}
+                          className="mt-4 text-center py-5 rounded border"
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            borderColor: 'rgba(255, 255, 255, 0.08)',
+                          }}
                         >
-                          <div className="d-flex align-items-center gap-3">
-                            <strong className="text-dark font-weight-bold">
-                              Select Modules (Optional)
-                            </strong>
-                            {modulesOptions.length > 0 && (
-                              <CFormCheck
-                                id="selectAllModules"
-                                label="Select All"
-                                checked={
-                                  modulesOptions.length > 0 &&
-                                  modulesOptions.every((m) => selectedModuleIds.includes(m.moduleId))
-                                }
-                                onChange={handleModuleSelectAll}
-                                style={{ cursor: 'pointer' }}
-                              />
-                            )}
+                          <div className="spinner-border text-info spinner-border-sm" role="status">
+                            <span className="visually-hidden">Loading...</span>
                           </div>
-                          <span className="text-muted small">
-                            * Leave unchecked to map the role to the entire Application level.
-                          </span>
-                        </CCardHeader>
-                        <CCardBody className="p-3">
-                          {modulesOptions.length > 0 ? (
-                            <div className="row g-2">
-                              {modulesOptions.map((module) => (
-                                <CCol
-                                  xs={12}
-                                  sm={6}
-                                  md={4}
-                                  lg={3}
-                                  key={module.moduleId}
-                                  className="py-1"
+                          <div className="text-muted mt-2 small">
+                            Loading existing user role profile mappings...
+                          </div>
+                        </CCol>
+                      ) : (
+                        <>
+                          {modulesOptions.length > 0 && (
+                            <CCol xs={12} className="mt-4">
+                              <CCard
+                                className="border shadow-sm"
+                                style={{
+                                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                  borderColor: 'rgba(255, 255, 255, 0.08)',
+                                }}
+                              >
+                                <CCardHeader
+                                  className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                  style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
                                 >
-                                  <div
-                                    className="d-flex align-items-center rounded px-2 py-1"
-                                    style={{
-                                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                                      minHeight: '38px',
-                                    }}
-                                  >
-                                    <CFormCheck
-                                      id={`module-${module.moduleId}`}
-                                      checked={selectedModuleIds.includes(module.moduleId)}
-                                      onChange={() => handleModuleCheckboxChange(module.moduleId)}
-                                      style={{
-                                        cursor: 'pointer',
-                                        marginRight: '0.5rem',
-                                        marginBottom: '0px',
-                                      }}
-                                    />
-                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                      <label
-                                        htmlFor={`module-${module.moduleId}`}
-                                        className="d-block text-truncate font-weight-semibold small"
-                                        style={{ cursor: 'pointer', marginBottom: 0 }}
-                                        title={module.moduleName}
+                                  <strong className="text-light small">
+                                    Modules & Nested Permissions
+                                  </strong>
+                                  <CFormCheck
+                                    id="selectAllModules"
+                                    label="Select All Modules"
+                                    checked={
+                                      modulesOptions.length > 0 &&
+                                      modulesOptions.every((m) =>
+                                        selectedModuleIds.includes(m.moduleId),
+                                      )
+                                    }
+                                    onChange={handleModuleSelectAll}
+                                    style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                                  />
+                                </CCardHeader>
+                                <CCardBody className="p-3">
+                                  {modulesOptions.map((module) => {
+                                    const isChecked = selectedModuleIds.includes(module.moduleId)
+                                    const options = modulePermissionsOptions[module.moduleId] || {
+                                      api: [],
+                                      ui: [],
+                                    }
+                                    const selectedPerms = modulePermissions[module.moduleId] || {
+                                      api: [],
+                                      ui: [],
+                                    }
+
+                                    return (
+                                      <div
+                                        key={module.moduleId}
+                                        className="mb-3 p-3 rounded"
+                                        style={{
+                                          backgroundColor: isChecked
+                                            ? 'rgba(255, 255, 255, 0.02)'
+                                            : 'rgba(255, 255, 255, 0.005)',
+                                          border: '1px solid rgba(255, 255, 255, 0.04)',
+                                        }}
                                       >
-                                        {module.moduleName}
-                                      </label>
-                                    </div>
-                                  </div>
-                                </CCol>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-4 text-muted small">
-                              No active modules found for this application. Mapping will default to the Application level.
-                            </div>
+                                        {/* Module Checkbox and Label */}
+                                        <div className="d-flex align-items-center">
+                                          <CFormCheck
+                                            id={`module-${module.moduleId}`}
+                                            checked={isChecked}
+                                            onChange={() =>
+                                              handleModuleCheckboxChange(module.moduleId)
+                                            }
+                                            style={{ cursor: 'pointer', marginRight: '0.5rem' }}
+                                          />
+                                          <label
+                                            htmlFor={`module-${module.moduleId}`}
+                                            className="font-weight-semibold text-light mb-0"
+                                            style={{
+                                              cursor: 'pointer',
+                                              userSelect: 'none',
+                                              fontSize: '0.9rem',
+                                            }}
+                                          >
+                                            {module.moduleName}
+                                          </label>
+                                        </div>
+
+                                        {/* Nested API and UI Permission Checkboxes */}
+                                        {isChecked && (
+                                          <div
+                                            className="row mt-3 ms-2 ps-3 border-start"
+                                            style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                                          >
+                                            {/* API Permissions Column */}
+                                            <div className="col-12 col-md-6 mb-3 mb-md-0">
+                                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                                <span className="text-muted small font-weight-bold">
+                                                  API Permissions
+                                                </span>
+                                                {options.api.length > 0 && (
+                                                  <CFormCheck
+                                                    id={`selectAllApi-${module.moduleId}`}
+                                                    label="All"
+                                                    checked={
+                                                      options.api.length > 0 &&
+                                                      options.api.every((p) =>
+                                                        selectedPerms.api.includes(
+                                                          p.apiPermissionId,
+                                                        ),
+                                                      )
+                                                    }
+                                                    onChange={() =>
+                                                      handleNestedApiSelectAll(module.moduleId)
+                                                    }
+                                                    style={{
+                                                      cursor: 'pointer',
+                                                      fontSize: '0.75rem',
+                                                    }}
+                                                  />
+                                                )}
+                                              </div>
+                                              <div
+                                                className="p-2 border rounded"
+                                                style={{
+                                                  maxHeight: '180px',
+                                                  overflowY: 'auto',
+                                                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                                                  borderColor: 'rgba(255, 255, 255, 0.05)',
+                                                }}
+                                              >
+                                                {options.api.length > 0 ? (
+                                                  options.api.map((perm) => (
+                                                    <div
+                                                      className="d-flex align-items-center mb-1"
+                                                      key={perm.apiPermissionId}
+                                                    >
+                                                      <CFormCheck
+                                                        id={`api-perm-${module.moduleId}-${perm.apiPermissionId}`}
+                                                        checked={selectedPerms.api.includes(
+                                                          perm.apiPermissionId,
+                                                        )}
+                                                        onChange={() =>
+                                                          handleNestedApiPermissionCheckboxChange(
+                                                            module.moduleId,
+                                                            perm.apiPermissionId,
+                                                          )
+                                                        }
+                                                        style={{
+                                                          cursor: 'pointer',
+                                                          marginRight: '0.5rem',
+                                                        }}
+                                                      />
+                                                      <label
+                                                        htmlFor={`api-perm-${module.moduleId}-${perm.apiPermissionId}`}
+                                                        className="text-truncate small text-muted mb-0"
+                                                        style={{
+                                                          cursor: 'pointer',
+                                                          userSelect: 'none',
+                                                          fontSize: '0.75rem',
+                                                        }}
+                                                        title={perm.apiPermissionName}
+                                                      >
+                                                        {perm.apiPermissionName}
+                                                      </label>
+                                                    </div>
+                                                  ))
+                                                ) : (
+                                                  <div className="text-muted small text-center py-2">
+                                                    Loading/No API permissions
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* UI Permissions Column */}
+                                            <div className="col-12 col-md-6">
+                                              <div className="d-flex align-items-center justify-content-between mb-2">
+                                                <span className="text-muted small font-weight-bold">
+                                                  UI Permissions
+                                                </span>
+                                                {options.ui.length > 0 && (
+                                                  <CFormCheck
+                                                    id={`selectAllUi-${module.moduleId}`}
+                                                    label="All"
+                                                    checked={
+                                                      options.ui.length > 0 &&
+                                                      options.ui.every((p) =>
+                                                        selectedPerms.ui.includes(p.uiPermissionId),
+                                                      )
+                                                    }
+                                                    onChange={() =>
+                                                      handleNestedUiSelectAll(module.moduleId)
+                                                    }
+                                                    style={{
+                                                      cursor: 'pointer',
+                                                      fontSize: '0.75rem',
+                                                    }}
+                                                  />
+                                                )}
+                                              </div>
+                                              <div
+                                                className="p-2 border rounded"
+                                                style={{
+                                                  maxHeight: '180px',
+                                                  overflowY: 'auto',
+                                                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                                                  borderColor: 'rgba(255, 255, 255, 0.05)',
+                                                }}
+                                              >
+                                                {options.ui.length > 0 ? (
+                                                  options.ui.map((perm) => (
+                                                    <div
+                                                      className="d-flex align-items-center mb-1"
+                                                      key={perm.uiPermissionId}
+                                                    >
+                                                      <CFormCheck
+                                                        id={`ui-perm-${module.moduleId}-${perm.uiPermissionId}`}
+                                                        checked={selectedPerms.ui.includes(
+                                                          perm.uiPermissionId,
+                                                        )}
+                                                        onChange={() =>
+                                                          handleNestedUiPermissionCheckboxChange(
+                                                            module.moduleId,
+                                                            perm.uiPermissionId,
+                                                          )
+                                                        }
+                                                        style={{
+                                                          cursor: 'pointer',
+                                                          marginRight: '0.5rem',
+                                                        }}
+                                                      />
+                                                      <label
+                                                        htmlFor={`ui-perm-${module.moduleId}-${perm.uiPermissionId}`}
+                                                        className="text-truncate small text-muted mb-0"
+                                                        style={{
+                                                          cursor: 'pointer',
+                                                          userSelect: 'none',
+                                                          fontSize: '0.75rem',
+                                                        }}
+                                                        title={perm.uiPermissionName}
+                                                      >
+                                                        {perm.uiPermissionName}
+                                                      </label>
+                                                    </div>
+                                                  ))
+                                                ) : (
+                                                  <div className="text-muted small text-center py-2">
+                                                    Loading/No UI permissions
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
+                                </CCardBody>
+                              </CCard>
+                            </CCol>
                           )}
-                        </CCardBody>
-                      </CCard>
-                    </CCol>
+
+                          {/* API and UI Permissions side-by-side when modules do not exist */}
+                          {modulesOptions.length === 0 && (
+                            <>
+                              {/* API Permissions Checklist */}
+                              <CCol xs={12} md={6} className="mt-4">
+                                <CCard
+                                  className="border shadow-sm h-100"
+                                  style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                                  }}
+                                >
+                                  <CCardHeader
+                                    className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                  >
+                                    <strong className="text-light small">API Permissions</strong>
+                                    {(modulePermissionsOptions['app']?.api || []).length > 0 && (
+                                      <CFormCheck
+                                        id="selectAllApi"
+                                        label="All"
+                                        checked={
+                                          (modulePermissionsOptions['app']?.api || []).length > 0 &&
+                                          (modulePermissionsOptions['app']?.api || []).every((p) =>
+                                            (modulePermissions['app']?.api || []).includes(
+                                              p.apiPermissionId,
+                                            ),
+                                          )
+                                        }
+                                        onChange={() => handleNestedApiSelectAll('app')}
+                                        style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                                      />
+                                    )}
+                                  </CCardHeader>
+                                  <CCardBody
+                                    className="p-2"
+                                    style={{ maxHeight: '250px', overflowY: 'auto' }}
+                                  >
+                                    {(modulePermissionsOptions['app']?.api || []).length > 0 ? (
+                                      modulePermissionsOptions['app'].api.map((perm) => (
+                                        <div
+                                          className="d-flex align-items-center rounded px-2 py-1 mb-1"
+                                          style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                                          }}
+                                          key={perm.apiPermissionId}
+                                        >
+                                          <CFormCheck
+                                            id={`api-perm-${perm.apiPermissionId}`}
+                                            checked={(modulePermissions['app']?.api || []).includes(
+                                              perm.apiPermissionId,
+                                            )}
+                                            onChange={() =>
+                                              handleNestedApiPermissionCheckboxChange(
+                                                'app',
+                                                perm.apiPermissionId,
+                                              )
+                                            }
+                                            style={{ cursor: 'pointer', marginRight: '0.5rem' }}
+                                          />
+                                          <label
+                                            htmlFor={`api-perm-${perm.apiPermissionId}`}
+                                            className="text-truncate small text-muted mb-0"
+                                            style={{ cursor: 'pointer', userSelect: 'none' }}
+                                            title={perm.apiPermissionName}
+                                          >
+                                            {perm.apiPermissionName}
+                                          </label>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="text-center py-4 text-muted small">
+                                        No active API permissions found.
+                                      </div>
+                                    )}
+                                  </CCardBody>
+                                </CCard>
+                              </CCol>
+
+                              {/* UI Permissions Checklist */}
+                              <CCol xs={12} md={6} className="mt-4">
+                                <CCard
+                                  className="border shadow-sm h-100"
+                                  style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                                  }}
+                                >
+                                  <CCardHeader
+                                    className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                  >
+                                    <strong className="text-light small">UI Permissions</strong>
+                                    {(modulePermissionsOptions['app']?.ui || []).length > 0 && (
+                                      <CFormCheck
+                                        id="selectAllUi"
+                                        label="All"
+                                        checked={
+                                          (modulePermissionsOptions['app']?.ui || []).length > 0 &&
+                                          (modulePermissionsOptions['app']?.ui || []).every((p) =>
+                                            (modulePermissions['app']?.ui || []).includes(
+                                              p.uiPermissionId,
+                                            ),
+                                          )
+                                        }
+                                        onChange={() => handleNestedUiSelectAll('app')}
+                                        style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                                      />
+                                    )}
+                                  </CCardHeader>
+                                  <CCardBody
+                                    className="p-2"
+                                    style={{ maxHeight: '250px', overflowY: 'auto' }}
+                                  >
+                                    {(modulePermissionsOptions['app']?.ui || []).length > 0 ? (
+                                      modulePermissionsOptions['app'].ui.map((perm) => (
+                                        <div
+                                          className="d-flex align-items-center rounded px-2 py-1 mb-1"
+                                          style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                                          }}
+                                          key={perm.uiPermissionId}
+                                        >
+                                          <CFormCheck
+                                            id={`ui-perm-${perm.uiPermissionId}`}
+                                            checked={(modulePermissions['app']?.ui || []).includes(
+                                              perm.uiPermissionId,
+                                            )}
+                                            onChange={() =>
+                                              handleNestedUiPermissionCheckboxChange(
+                                                'app',
+                                                perm.uiPermissionId,
+                                              )
+                                            }
+                                            style={{ cursor: 'pointer', marginRight: '0.5rem' }}
+                                          />
+                                          <label
+                                            htmlFor={`ui-perm-${perm.uiPermissionId}`}
+                                            className="text-truncate small text-muted mb-0"
+                                            style={{ cursor: 'pointer', userSelect: 'none' }}
+                                            title={perm.uiPermissionName}
+                                          >
+                                            {perm.uiPermissionName}
+                                          </label>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="text-center py-4 text-muted small">
+                                        No active UI permissions found.
+                                      </div>
+                                    )}
+                                  </CCardBody>
+                                </CCard>
+                              </CCol>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </>
                   )}
 
                   {/* Form Submission Buttons */}
@@ -1169,8 +1990,11 @@ const UserRole = () => {
                       className="row g-3 mb-4 pb-3 border-bottom align-items-end"
                       style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
                     >
-                      <CCol xs={12} sm={4}>
-                        <CFormLabel htmlFor="filterRealmSelect" className="text-muted small font-weight-bold">
+                      <CCol xs={12} sm={6} md={3}>
+                        <CFormLabel
+                          htmlFor="filterRealmSelect"
+                          className="text-muted small font-weight-bold"
+                        >
                           Filter by Realm
                         </CFormLabel>
                         <CFormSelect
@@ -1189,8 +2013,11 @@ const UserRole = () => {
                         </CFormSelect>
                       </CCol>
 
-                      <CCol xs={12} sm={4}>
-                        <CFormLabel htmlFor="filterAppSelect" className="text-muted small font-weight-bold">
+                      <CCol xs={12} sm={6} md={3}>
+                        <CFormLabel
+                          htmlFor="filterAppSelect"
+                          className="text-muted small font-weight-bold"
+                        >
                           Filter by Application
                         </CFormLabel>
                         <CFormSelect
@@ -1209,10 +2036,120 @@ const UserRole = () => {
                         </CFormSelect>
                       </CCol>
 
-                      <CCol xs={12} sm={4}>
+                      <CCol xs={12} sm={6} md={3}>
+                        <CFormLabel
+                          htmlFor="filterModuleSelect"
+                          className="text-muted small font-weight-bold"
+                        >
+                          Filter by Module
+                        </CFormLabel>
+                        <CFormSelect
+                          id="filterModuleSelect"
+                          value={filterModuleId}
+                          onChange={(e) => handleFilterModuleChange(e.target.value)}
+                          style={{ cursor: 'pointer' }}
+                          size="sm"
+                          disabled={filterRealmId === '-1' || filterApplicationId === '-1'}
+                        >
+                          {filterRealmId === '-1' || filterApplicationId === '-1' ? (
+                            <option value="-1">Select Realm & Application first</option>
+                          ) : (
+                            <>
+                              <option value="-1">All Modules</option>
+                              <option value="0">Application Level</option>
+                              {filterModulesOptions.map((module) => (
+                                <option key={module.moduleId} value={module.moduleId}>
+                                  {module.moduleName}
+                                </option>
+                              ))}
+                            </>
+                          )}
+                        </CFormSelect>
+                      </CCol>
+
+                      <CCol xs={12} sm={6} md={3} style={{ position: 'relative' }} ref={filterRoleDropdownRef}>
+                        <CFormLabel
+                          htmlFor="filterUserRoleSearch"
+                          className="text-muted small font-weight-bold"
+                        >
+                          Filter by User Role
+                        </CFormLabel>
+                        <div className="d-flex align-items-center gap-1 position-relative">
+                          <CFormInput
+                            type="text"
+                            id="filterUserRoleSearch"
+                            placeholder={
+                              filterRealmId === '-1' || filterApplicationId === '-1'
+                                ? 'Select Realm & Application first'
+                                : 'Search user roles...'
+                            }
+                            value={filterRoleSearchQuery}
+                            onClick={() => {
+                              if (filterRealmId !== '-1' && filterApplicationId !== '-1') {
+                                setFilterRoleDropdownOpen(true)
+                              }
+                            }}
+                            onChange={(e) => {
+                              setFilterRoleSearchQuery(e.target.value)
+                              setFilterSelectedRole(null)
+                              if (filterRealmId !== '-1' && filterApplicationId !== '-1') {
+                                setFilterRoleDropdownOpen(true)
+                              }
+                            }}
+                            disabled={filterRealmId === '-1' || filterApplicationId === '-1'}
+                            size="sm"
+                          />
+                          {filterSelectedRole && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-close position-absolute"
+                              style={{ right: '8px', zIndex: 10 }}
+                              onClick={handleFilterRoleClear}
+                              aria-label="Close"
+                            />
+                          )}
+                        </div>
+                        {filterRoleDropdownOpen && (
+                          <div
+                            className="dropdown-menu show w-100 shadow-lg"
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              zIndex: 1050,
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              backgroundColor: 'var(--cui-body-bg, #2a303d)',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '0.25rem',
+                            }}
+                          >
+                            {filteredFilterRoles.length > 0 ? (
+                              filteredFilterRoles.map((role) => (
+                                <button
+                                  key={role.roleId}
+                                  type="button"
+                                  className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleFilterRoleSelect(role)}
+                                >
+                                  <strong>{role.roleName}</strong>
+                                  {role.description ? ` - ${role.description}` : ''}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="dropdown-item text-muted disabled">
+                                No matching roles found
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CCol>
+
+                      <CCol xs={12} className="d-flex justify-content-end mt-2">
                         <button
                           type="button"
-                          className="btn btn-sm btn-outline-secondary w-100"
+                          className="btn btn-sm btn-outline-secondary px-4"
                           onClick={handleFilterClear}
                         >
                           Clear Filters
@@ -1240,37 +2177,181 @@ const UserRole = () => {
                                   }}
                                 >
                                   <CCardHeader
-                                    className="py-2 bg-transparent font-weight-semibold"
+                                    className="py-2 bg-transparent font-weight-semibold text-truncate"
                                     style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}
+                                    title={appName}
                                   >
                                     Application: {appName}
                                   </CCardHeader>
                                   <CCardBody className="p-3">
-                                    {Object.entries(rolesList).map(([roleName, mappings]) => (
-                                      <div key={roleName} className="mb-3">
-                                        <div className="small font-weight-bold text-info mb-1">{roleName}</div>
-                                        <div className="d-flex flex-column gap-2 ps-2">
-                                          {mappings.map((mapping) => (
+                                    {Object.entries(rolesList).map(([roleName, modulesList]) => {
+                                      const firstModuleKey = Object.keys(modulesList)[0]
+                                      const sampleProfile =
+                                        modulesList[firstModuleKey]?.api?.[0] ||
+                                        modulesList[firstModuleKey]?.ui?.[0]
+
+                                      return (
+                                        <div
+                                          key={roleName}
+                                          className="mb-3 border-bottom pb-2"
+                                          style={{ borderColor: 'rgba(255, 255, 255, 0.04)' }}
+                                        >
+                                          <div className="d-flex align-items-center justify-content-between mb-2">
                                             <div
-                                              key={mapping.id}
-                                              className="d-flex align-items-center justify-content-between"
+                                              className="small font-weight-bold text-info"
+                                              style={{ fontSize: '0.85rem' }}
                                             >
-                                              <span className="small text-muted text-truncate" style={{ maxWidth: '180px' }}>
-                                                • {mapping.module?.moduleName || 'Application Level'}
-                                              </span>
-                                              <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-danger py-0 px-2"
-                                                style={{ fontSize: '0.75rem' }}
-                                                onClick={() => confirmDeleteProfile(mapping)}
-                                              >
-                                                Delete
-                                              </button>
+                                              {roleName}
                                             </div>
-                                          ))}
+                                            {sampleProfile && (
+                                              <CButton
+                                                color="link"
+                                                size="sm"
+                                                className="p-0 text-decoration-none text-warning small font-weight-semibold"
+                                                style={{ fontSize: '0.75rem', outline: 'none' }}
+                                                onClick={() =>
+                                                  handleEditProfile(
+                                                    sampleProfile.realmId,
+                                                    sampleProfile.applicationId,
+                                                    sampleProfile.userRole,
+                                                  )
+                                                }
+                                              >
+                                                Edit
+                                              </CButton>
+                                            )}
+                                          </div>
+
+                                          {Object.entries(modulesList).map(([moduleName, permObj]) => {
+                                            const isAppLevel = moduleName === 'Application Level'
+                                            return (
+                                              <div
+                                                key={moduleName}
+                                                className={
+                                                  isAppLevel ? 'mb-2' : 'mb-2 ms-2 ps-2 border-start'
+                                                }
+                                                style={
+                                                  isAppLevel
+                                                    ? {}
+                                                    : { borderColor: 'rgba(255, 255, 255, 0.1)' }
+                                                }
+                                              >
+                                                {!isAppLevel && (
+                                                  <div
+                                                    className="font-weight-bold text-light mb-1"
+                                                    style={{ fontSize: '0.75rem' }}
+                                                  >
+                                                    📦 Module: {moduleName}
+                                                  </div>
+                                                )}
+
+                                                {/* API Permissions List under Module */}
+                                                {permObj.api && permObj.api.length > 0 && (
+                                                  <div className="mb-1 ms-2">
+                                                    <div
+                                                      className="text-muted small"
+                                                      style={{ fontSize: '0.68rem' }}
+                                                    >
+                                                      API Permissions:
+                                                    </div>
+                                                    {permObj.api.map((mapping) => (
+                                                      <div
+                                                        key={`api-${mapping.id}`}
+                                                        className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
+                                                        style={{
+                                                          backgroundColor:
+                                                            'rgba(255, 255, 255, 0.01)',
+                                                          border:
+                                                            '1px solid rgba(255, 255, 255, 0.02)',
+                                                        }}
+                                                      >
+                                                        <span
+                                                          className="small text-muted text-truncate"
+                                                          title={
+                                                            mapping.apiPermission?.apiPermissionName
+                                                          }
+                                                          style={{ fontSize: '0.7rem' }}
+                                                        >
+                                                          {mapping.apiPermission?.apiPermissionName}
+                                                        </span>
+                                                        <button
+                                                          type="button"
+                                                          className="btn btn-sm btn-outline-danger py-0 px-2"
+                                                          style={{
+                                                            fontSize: '0.65rem',
+                                                            height: '18px',
+                                                            lineHeight: '16px',
+                                                          }}
+                                                          onClick={() =>
+                                                            confirmDeleteProfile({
+                                                              ...mapping,
+                                                              permissionType: 'api',
+                                                            })
+                                                          }
+                                                        >
+                                                          Delete
+                                                        </button>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+
+                                                {/* UI Permissions List under Module */}
+                                                {permObj.ui && permObj.ui.length > 0 && (
+                                                  <div className="ms-2">
+                                                    <div
+                                                      className="text-muted small"
+                                                      style={{ fontSize: '0.68rem' }}
+                                                    >
+                                                      UI Permissions:
+                                                    </div>
+                                                    {permObj.ui.map((mapping) => (
+                                                      <div
+                                                        key={`ui-${mapping.id}`}
+                                                        className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
+                                                        style={{
+                                                          backgroundColor:
+                                                            'rgba(255, 255, 255, 0.01)',
+                                                          border:
+                                                            '1px solid rgba(255, 255, 255, 0.02)',
+                                                        }}
+                                                      >
+                                                        <span
+                                                          className="small text-muted text-truncate"
+                                                          title={
+                                                            mapping.uiPermission?.uiPermissionName
+                                                          }
+                                                          style={{ fontSize: '0.7rem' }}
+                                                        >
+                                                          {mapping.uiPermission?.uiPermissionName}
+                                                        </span>
+                                                        <button
+                                                          type="button"
+                                                          className="btn btn-sm btn-outline-danger py-0 px-2"
+                                                          style={{
+                                                            fontSize: '0.65rem',
+                                                            height: '18px',
+                                                            lineHeight: '16px',
+                                                          }}
+                                                          onClick={() =>
+                                                            confirmDeleteProfile({
+                                                              ...mapping,
+                                                              permissionType: 'ui',
+                                                            })
+                                                          }
+                                                        >
+                                                          Delete
+                                                        </button>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    })}
                                   </CCardBody>
                                 </CCard>
                               </div>
@@ -1279,9 +2360,7 @@ const UserRole = () => {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4 text-muted small">
-                        No mappings found.
-                      </div>
+                      <div className="text-center py-4 text-muted small">No mappings found.</div>
                     )}
                   </CCardBody>
                 </CCard>
@@ -1322,7 +2401,8 @@ const UserRole = () => {
                 Role: <strong>{profileToDelete.userRole?.roleName}</strong>
               </p>
               <p>
-                Module/Level: <strong>{profileToDelete.module?.moduleName || 'Application Level'}</strong>
+                Module/Level:{' '}
+                <strong>{profileToDelete.module?.moduleName || 'Application Level'}</strong>
               </p>
               <p className="text-danger small">This action cannot be undone.</p>
             </div>
