@@ -56,11 +56,8 @@ const ModuleAPIPermission = () => {
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data || [])
       }
-      const appsRes = await getActiveApplications()
-      if (appsRes.status === 200) {
-        setApplicationsOptions(appsRes.data || [])
-        setFilterApplicationsOptions(appsRes.data || [])
-      }
+      setApplicationsOptions([])
+      setFilterApplicationsOptions([])
     } catch (error) {
       toast.error('Failed to load dropdown filters: ' + error.message)
     }
@@ -73,7 +70,7 @@ const ModuleAPIPermission = () => {
         const res = await searchModuleAssignedPermissions(
           realmId === '-1' ? null : realmId,
           appId === '-1' ? null : appId,
-          modId === '-1' ? null : modId
+          modId === '-1' ? null : modId,
         )
         if (res.status === 200) {
           setAssignedMappings(res.data || [])
@@ -82,7 +79,7 @@ const ModuleAPIPermission = () => {
         toast.error('Failed to load assigned mappings: ' + error.message)
       }
     },
-    [filterRealmId, filterApplicationId, filterModuleId]
+    [filterRealmId, filterApplicationId, filterModuleId],
   )
 
   useEffect(() => {
@@ -132,8 +129,10 @@ const ModuleAPIPermission = () => {
         const unassigned = candidates.filter(
           (cand) =>
             !modMapped.some(
-              (m) => m.apiPermissionId === cand.apiPermissionId || m.apiPermission?.apiPermissionId === cand.apiPermissionId
-            )
+              (m) =>
+                m.apiPermissionId === cand.apiPermissionId ||
+                m.apiPermission?.apiPermissionId === cand.apiPermissionId,
+            ),
         )
 
         setActivePermissions(unassigned)
@@ -154,10 +153,7 @@ const ModuleAPIPermission = () => {
 
     try {
       if (realmId === '-1') {
-        const appsRes = await getActiveApplications()
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data || [])
-        }
+        setApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, realmId, null)
         if (searchRes.status === 200) {
@@ -182,6 +178,8 @@ const ModuleAPIPermission = () => {
         if (modulesRes.status === 200) {
           setModulesOptions(modulesRes.data.modules || [])
         }
+      } else {
+        setModulesOptions([])
       }
     } catch (error) {
       toast.error('Failed to load modules for dropdown: ' + error.message)
@@ -266,11 +264,7 @@ const ModuleAPIPermission = () => {
       if (res.status === 200) {
         toast.success(res.message || 'Mapping deleted successfully!')
         fetchAssignedMappings()
-        if (
-          mappingRealmId !== '-1' &&
-          mappingApplicationId !== '-1' &&
-          mappingModuleId !== '-1'
-        ) {
+        if (mappingRealmId !== '-1' && mappingApplicationId !== '-1' && mappingModuleId !== '-1') {
           fetchActivePermissionsList(mappingRealmId, mappingApplicationId, mappingModuleId)
         }
       } else {
@@ -290,15 +284,7 @@ const ModuleAPIPermission = () => {
     setModulesOptions([])
     setMappingValidated(false)
     setMappingSearchParam('')
-    getActiveApplications()
-      .then((appsRes) => {
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data || [])
-        }
-      })
-      .catch((error) => {
-        toast.error('Failed to reset applications: ' + error.message)
-      })
+    setApplicationsOptions([])
   }
 
   // --- FILTRATION HANDLERS (ASSIGNED LIST) ---
@@ -310,7 +296,7 @@ const ModuleAPIPermission = () => {
 
     try {
       if (realmId === '-1') {
-        setFilterApplicationsOptions(applicationsOptions)
+        setFilterApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, realmId, null)
         if (searchRes.status === 200) {
@@ -333,6 +319,8 @@ const ModuleAPIPermission = () => {
         if (modulesRes.status === 200) {
           setFilterModulesOptions(modulesRes.data.modules || [])
         }
+      } else {
+        setFilterModulesOptions([])
       }
     } catch (error) {
       toast.error('Failed to load filter modules: ' + error.message)
@@ -347,7 +335,7 @@ const ModuleAPIPermission = () => {
     setFilterRealmId('-1')
     setFilterApplicationId('-1')
     setFilterModuleId('-1')
-    setFilterApplicationsOptions(applicationsOptions)
+    setFilterApplicationsOptions([])
     setFilterModulesOptions([])
   }
 
@@ -355,8 +343,7 @@ const ModuleAPIPermission = () => {
   const getGroupedMappings = () => {
     const grouped = {}
     assignedMappings.forEach((mapping) => {
-      const realmName =
-        mapping.realm?.realm || mapping.module?.realm?.realm || 'Unknown Realm'
+      const realmName = mapping.realm?.realm || mapping.module?.realm?.realm || 'Unknown Realm'
       const appName =
         mapping.application?.clientId ||
         mapping.module?.application?.clientId ||
@@ -382,12 +369,14 @@ const ModuleAPIPermission = () => {
     (perm) =>
       perm.apiPermissionName.toLowerCase().includes(mappingSearchParam.toLowerCase()) ||
       (perm.description &&
-        perm.description.toLowerCase().includes(mappingSearchParam.toLowerCase()))
+        perm.description.toLowerCase().includes(mappingSearchParam.toLowerCase())),
   )
 
   const isAllChecked =
     filteredActivePermissions.length > 0 &&
-    filteredActivePermissions.map((p) => p.apiPermissionId).every((id) => selectedPermissionIds.includes(id))
+    filteredActivePermissions
+      .map((p) => p.apiPermissionId)
+      .every((id) => selectedPermissionIds.includes(id))
 
   return (
     <CRow>
@@ -441,6 +430,7 @@ const ModuleAPIPermission = () => {
                   style={{ cursor: 'pointer' }}
                   size="sm"
                   required
+                  disabled={mappingRealmId === '-1'}
                 >
                   <option value="-1">Select an Application</option>
                   {applicationsOptions.map((app, index) => (
@@ -466,6 +456,7 @@ const ModuleAPIPermission = () => {
                   style={{ cursor: 'pointer' }}
                   size="sm"
                   required
+                  disabled={mappingRealmId === '-1' || mappingApplicationId === '-1'}
                 >
                   <option value="-1">Select a Module</option>
                   {modulesOptions.map((mod) => (
@@ -516,7 +507,14 @@ const ModuleAPIPermission = () => {
                     {filteredActivePermissions.length > 0 ? (
                       <div className="row g-2">
                         {filteredActivePermissions.map((perm) => (
-                          <CCol xs={12} sm={6} md={4} lg={3} key={perm.apiPermissionId} className="py-1">
+                          <CCol
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            lg={3}
+                            key={perm.apiPermissionId}
+                            className="py-1"
+                          >
                             <div
                               className="d-flex align-items-center rounded px-2 py-1"
                               style={{
@@ -600,7 +598,10 @@ const ModuleAPIPermission = () => {
                   style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
                 >
                   <CCol xs={12} sm={3}>
-                    <CFormLabel htmlFor="filterRealmSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="filterRealmSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Filter by Realm
                     </CFormLabel>
                     <CFormSelect
@@ -620,7 +621,10 @@ const ModuleAPIPermission = () => {
                   </CCol>
 
                   <CCol xs={12} sm={3}>
-                    <CFormLabel htmlFor="filterAppSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="filterAppSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Filter by Application
                     </CFormLabel>
                     <CFormSelect
@@ -629,6 +633,7 @@ const ModuleAPIPermission = () => {
                       onChange={(e) => handleFilterApplicationChange(e.target.value)}
                       style={{ cursor: 'pointer' }}
                       size="sm"
+                      disabled={filterRealmId === '-1'}
                     >
                       <option value="-1">All Applications</option>
                       {filterApplicationsOptions.map((app, index) => (
@@ -640,7 +645,10 @@ const ModuleAPIPermission = () => {
                   </CCol>
 
                   <CCol xs={12} sm={3}>
-                    <CFormLabel htmlFor="filterModuleSelect" className="text-muted small font-weight-bold">
+                    <CFormLabel
+                      htmlFor="filterModuleSelect"
+                      className="text-muted small font-weight-bold"
+                    >
                       Filter by Module
                     </CFormLabel>
                     <CFormSelect
@@ -649,6 +657,7 @@ const ModuleAPIPermission = () => {
                       onChange={(e) => handleFilterModuleChange(e.target.value)}
                       style={{ cursor: 'pointer' }}
                       size="sm"
+                      disabled={filterRealmId === '-1' || filterApplicationId === '-1'}
                     >
                       <option value="-1">All Modules</option>
                       {filterModulesOptions.map((mod) => (

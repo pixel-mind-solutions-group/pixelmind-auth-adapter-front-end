@@ -12,7 +12,12 @@ export const createModuleHasApiPermission = async (data) => {
   }
 }
 
-export const searchModuleAssignedPermissions = async (realmId, applicationId, moduleId, apiPermissionName) => {
+export const searchModuleAssignedPermissions = async (
+  realmId,
+  applicationId,
+  moduleId,
+  apiPermissionName,
+) => {
   try {
     const params = {}
     if (realmId && realmId !== '-1') params.realm_id = realmId

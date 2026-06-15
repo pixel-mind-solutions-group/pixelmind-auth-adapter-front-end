@@ -145,12 +145,9 @@ const UserRole = () => {
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data || [])
       }
-      const appsRes = await getActiveApplications()
-      if (appsRes.status === 200) {
-        setApplicationsOptions(appsRes.data || [])
-        setFilterApplicationsOptions(appsRes.data || [])
-        setDefFilterApplicationsOptions(appsRes.data || [])
-      }
+      setApplicationsOptions([])
+      setFilterApplicationsOptions([])
+      setDefFilterApplicationsOptions([])
     } catch (error) {
       toast.error('Failed to load initial dropdown filters: ' + error.message)
     }
@@ -221,7 +218,7 @@ const UserRole = () => {
 
     try {
       if (rId === '-1') {
-        setDefFilterApplicationsOptions(applicationsOptions)
+        setDefFilterApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, rId, null)
         if (searchRes.status === 200) {
@@ -242,7 +239,7 @@ const UserRole = () => {
   const handleDefFilterClear = () => {
     setDefFilterRealmId('-1')
     setDefFilterApplicationId('-1')
-    setDefFilterApplicationsOptions(applicationsOptions)
+    setDefFilterApplicationsOptions([])
     setCurrentPage(0)
   }
 
@@ -602,10 +599,7 @@ const UserRole = () => {
 
     try {
       if (rId === '-1') {
-        const appsRes = await getActiveApplications()
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data || [])
-        }
+        setApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, rId, null)
         if (searchRes.status === 200) {
@@ -810,6 +804,7 @@ const UserRole = () => {
     setRoleDropdownOpen(false)
     setMappingValidated(false)
     setActiveUserRoles([])
+    setApplicationsOptions([])
   }
 
   const handleFilterRealmChange = async (rId) => {
@@ -823,7 +818,7 @@ const UserRole = () => {
 
     try {
       if (rId === '-1') {
-        setFilterApplicationsOptions(applicationsOptions)
+        setFilterApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, rId, null)
         if (searchRes.status === 200) {
@@ -870,7 +865,7 @@ const UserRole = () => {
     setFilterActiveUserRoles([])
     setFilterRoleSearchQuery('')
     setFilterSelectedRole(null)
-    setFilterApplicationsOptions(applicationsOptions)
+    setFilterApplicationsOptions([])
     fetchAssignedProfiles('-1', '-1', '-1', '-1')
   }
 
@@ -900,12 +895,7 @@ const UserRole = () => {
     setFilterSelectedRole(null)
     setFilterRoleSearchQuery('')
     setFilterRoleDropdownOpen(false)
-    fetchAssignedProfiles(
-      filterRealmId,
-      filterApplicationId,
-      filterModuleId,
-      '-1',
-    )
+    fetchAssignedProfiles(filterRealmId, filterApplicationId, filterModuleId, '-1')
   }
 
   const handleEditProfile = async (rId, appId, role) => {
@@ -927,7 +917,7 @@ const UserRole = () => {
           setApplicationsOptions(searchRes.data.applications || [])
         }
       }
-      
+
       // 2. Fetch modules and user roles for the application
       if (rId !== '-1' && appId !== '-1') {
         const modulesRes = await searchModules(0, 1000, null, rId, appId, true)
@@ -938,13 +928,13 @@ const UserRole = () => {
           setModulesOptions(mods)
           hasModules = mods.length > 0
         }
-        
+
         await fetchActiveRoles(rId, appId)
-        
+
         if (!hasModules) {
           await fetchModulePermissions('app', rId, appId)
         }
-        
+
         // 3. Load mapped permissions for checkbox checking
         await loadExistingMappingForRole(role, rId, appId, mods)
       }
@@ -998,7 +988,8 @@ const UserRole = () => {
   const filteredFilterRoles = filterActiveUserRoles.filter(
     (role) =>
       role.roleName.toLowerCase().includes(filterRoleSearchQuery.toLowerCase()) ||
-      (role.description && role.description.toLowerCase().includes(filterRoleSearchQuery.toLowerCase())),
+      (role.description &&
+        role.description.toLowerCase().includes(filterRoleSearchQuery.toLowerCase())),
   )
 
   const getGroupedProfiles = () => {
@@ -1144,6 +1135,7 @@ const UserRole = () => {
                       style={{ cursor: 'pointer' }}
                       size="sm"
                       required
+                      disabled={definitionsRealmId === '-1'}
                     >
                       <option value="-1">Select an Application</option>
                       {definitionsApplicationsOptions.map((app, index) => (
@@ -1277,6 +1269,7 @@ const UserRole = () => {
                       onChange={(e) => handleDefFilterApplicationChange(e.target.value)}
                       style={{ cursor: 'pointer' }}
                       size="sm"
+                      disabled={defFilterRealmId === '-1'}
                     >
                       <option value="-1">All Applications</option>
                       {defFilterApplicationsOptions.map((app, index) => (
@@ -1442,6 +1435,7 @@ const UserRole = () => {
                       style={{ cursor: 'pointer' }}
                       size="sm"
                       required
+                      disabled={realmId === '-1'}
                     >
                       <option value="-1">Select an Application</option>
                       {applicationsOptions.map((app, index) => (
@@ -2026,6 +2020,7 @@ const UserRole = () => {
                           onChange={(e) => handleFilterApplicationChange(e.target.value)}
                           style={{ cursor: 'pointer' }}
                           size="sm"
+                          disabled={filterRealmId === '-1'}
                         >
                           <option value="-1">All Applications</option>
                           {filterApplicationsOptions.map((app, index) => (
@@ -2067,7 +2062,13 @@ const UserRole = () => {
                         </CFormSelect>
                       </CCol>
 
-                      <CCol xs={12} sm={6} md={3} style={{ position: 'relative' }} ref={filterRoleDropdownRef}>
+                      <CCol
+                        xs={12}
+                        sm={6}
+                        md={3}
+                        style={{ position: 'relative' }}
+                        ref={filterRoleDropdownRef}
+                      >
                         <CFormLabel
                           htmlFor="filterUserRoleSearch"
                           className="text-muted small font-weight-bold"
@@ -2222,133 +2223,141 @@ const UserRole = () => {
                                             )}
                                           </div>
 
-                                          {Object.entries(modulesList).map(([moduleName, permObj]) => {
-                                            const isAppLevel = moduleName === 'Application Level'
-                                            return (
-                                              <div
-                                                key={moduleName}
-                                                className={
-                                                  isAppLevel ? 'mb-2' : 'mb-2 ms-2 ps-2 border-start'
-                                                }
-                                                style={
-                                                  isAppLevel
-                                                    ? {}
-                                                    : { borderColor: 'rgba(255, 255, 255, 0.1)' }
-                                                }
-                                              >
-                                                {!isAppLevel && (
-                                                  <div
-                                                    className="font-weight-bold text-light mb-1"
-                                                    style={{ fontSize: '0.75rem' }}
-                                                  >
-                                                    📦 Module: {moduleName}
-                                                  </div>
-                                                )}
-
-                                                {/* API Permissions List under Module */}
-                                                {permObj.api && permObj.api.length > 0 && (
-                                                  <div className="mb-1 ms-2">
+                                          {Object.entries(modulesList).map(
+                                            ([moduleName, permObj]) => {
+                                              const isAppLevel = moduleName === 'Application Level'
+                                              return (
+                                                <div
+                                                  key={moduleName}
+                                                  className={
+                                                    isAppLevel
+                                                      ? 'mb-2'
+                                                      : 'mb-2 ms-2 ps-2 border-start'
+                                                  }
+                                                  style={
+                                                    isAppLevel
+                                                      ? {}
+                                                      : { borderColor: 'rgba(255, 255, 255, 0.1)' }
+                                                  }
+                                                >
+                                                  {!isAppLevel && (
                                                     <div
-                                                      className="text-muted small"
-                                                      style={{ fontSize: '0.68rem' }}
+                                                      className="font-weight-bold text-light mb-1"
+                                                      style={{ fontSize: '0.75rem' }}
                                                     >
-                                                      API Permissions:
+                                                      📦 Module: {moduleName}
                                                     </div>
-                                                    {permObj.api.map((mapping) => (
-                                                      <div
-                                                        key={`api-${mapping.id}`}
-                                                        className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
-                                                        style={{
-                                                          backgroundColor:
-                                                            'rgba(255, 255, 255, 0.01)',
-                                                          border:
-                                                            '1px solid rgba(255, 255, 255, 0.02)',
-                                                        }}
-                                                      >
-                                                        <span
-                                                          className="small text-muted text-truncate"
-                                                          title={
-                                                            mapping.apiPermission?.apiPermissionName
-                                                          }
-                                                          style={{ fontSize: '0.7rem' }}
-                                                        >
-                                                          {mapping.apiPermission?.apiPermissionName}
-                                                        </span>
-                                                        <button
-                                                          type="button"
-                                                          className="btn btn-sm btn-outline-danger py-0 px-2"
-                                                          style={{
-                                                            fontSize: '0.65rem',
-                                                            height: '18px',
-                                                            lineHeight: '16px',
-                                                          }}
-                                                          onClick={() =>
-                                                            confirmDeleteProfile({
-                                                              ...mapping,
-                                                              permissionType: 'api',
-                                                            })
-                                                          }
-                                                        >
-                                                          Delete
-                                                        </button>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                )}
+                                                  )}
 
-                                                {/* UI Permissions List under Module */}
-                                                {permObj.ui && permObj.ui.length > 0 && (
-                                                  <div className="ms-2">
-                                                    <div
-                                                      className="text-muted small"
-                                                      style={{ fontSize: '0.68rem' }}
-                                                    >
-                                                      UI Permissions:
-                                                    </div>
-                                                    {permObj.ui.map((mapping) => (
+                                                  {/* API Permissions List under Module */}
+                                                  {permObj.api && permObj.api.length > 0 && (
+                                                    <div className="mb-1 ms-2">
                                                       <div
-                                                        key={`ui-${mapping.id}`}
-                                                        className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
-                                                        style={{
-                                                          backgroundColor:
-                                                            'rgba(255, 255, 255, 0.01)',
-                                                          border:
-                                                            '1px solid rgba(255, 255, 255, 0.02)',
-                                                        }}
+                                                        className="text-muted small"
+                                                        style={{ fontSize: '0.68rem' }}
                                                       >
-                                                        <span
-                                                          className="small text-muted text-truncate"
-                                                          title={
-                                                            mapping.uiPermission?.uiPermissionName
-                                                          }
-                                                          style={{ fontSize: '0.7rem' }}
-                                                        >
-                                                          {mapping.uiPermission?.uiPermissionName}
-                                                        </span>
-                                                        <button
-                                                          type="button"
-                                                          className="btn btn-sm btn-outline-danger py-0 px-2"
-                                                          style={{
-                                                            fontSize: '0.65rem',
-                                                            height: '18px',
-                                                            lineHeight: '16px',
-                                                          }}
-                                                          onClick={() =>
-                                                            confirmDeleteProfile({
-                                                              ...mapping,
-                                                              permissionType: 'ui',
-                                                            })
-                                                          }
-                                                        >
-                                                          Delete
-                                                        </button>
+                                                        API Permissions:
                                                       </div>
-                                                    ))}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            )
-                                          })}
+                                                      {permObj.api.map((mapping) => (
+                                                        <div
+                                                          key={`api-${mapping.id}`}
+                                                          className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
+                                                          style={{
+                                                            backgroundColor:
+                                                              'rgba(255, 255, 255, 0.01)',
+                                                            border:
+                                                              '1px solid rgba(255, 255, 255, 0.02)',
+                                                          }}
+                                                        >
+                                                          <span
+                                                            className="small text-muted text-truncate"
+                                                            title={
+                                                              mapping.apiPermission
+                                                                ?.apiPermissionName
+                                                            }
+                                                            style={{ fontSize: '0.7rem' }}
+                                                          >
+                                                            {
+                                                              mapping.apiPermission
+                                                                ?.apiPermissionName
+                                                            }
+                                                          </span>
+                                                          <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-danger py-0 px-2"
+                                                            style={{
+                                                              fontSize: '0.65rem',
+                                                              height: '18px',
+                                                              lineHeight: '16px',
+                                                            }}
+                                                            onClick={() =>
+                                                              confirmDeleteProfile({
+                                                                ...mapping,
+                                                                permissionType: 'api',
+                                                              })
+                                                            }
+                                                          >
+                                                            Delete
+                                                          </button>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+
+                                                  {/* UI Permissions List under Module */}
+                                                  {permObj.ui && permObj.ui.length > 0 && (
+                                                    <div className="ms-2">
+                                                      <div
+                                                        className="text-muted small"
+                                                        style={{ fontSize: '0.68rem' }}
+                                                      >
+                                                        UI Permissions:
+                                                      </div>
+                                                      {permObj.ui.map((mapping) => (
+                                                        <div
+                                                          key={`ui-${mapping.id}`}
+                                                          className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
+                                                          style={{
+                                                            backgroundColor:
+                                                              'rgba(255, 255, 255, 0.01)',
+                                                            border:
+                                                              '1px solid rgba(255, 255, 255, 0.02)',
+                                                          }}
+                                                        >
+                                                          <span
+                                                            className="small text-muted text-truncate"
+                                                            title={
+                                                              mapping.uiPermission?.uiPermissionName
+                                                            }
+                                                            style={{ fontSize: '0.7rem' }}
+                                                          >
+                                                            {mapping.uiPermission?.uiPermissionName}
+                                                          </span>
+                                                          <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-danger py-0 px-2"
+                                                            style={{
+                                                              fontSize: '0.65rem',
+                                                              height: '18px',
+                                                              lineHeight: '16px',
+                                                            }}
+                                                            onClick={() =>
+                                                              confirmDeleteProfile({
+                                                                ...mapping,
+                                                                permissionType: 'ui',
+                                                              })
+                                                            }
+                                                          >
+                                                            Delete
+                                                          </button>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )
+                                            },
+                                          )}
                                         </div>
                                       )
                                     })}

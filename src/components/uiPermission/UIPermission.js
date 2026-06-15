@@ -123,19 +123,22 @@ const UIPermission = () => {
     }
   }, [])
 
-  const fetchAssignedMappings = useCallback(async (realmId = filterRealmId, appId = filterApplicationId) => {
-    try {
-      const res = await searchAssignedPermissions(
-        realmId === '-1' ? null : realmId,
-        appId === '-1' ? null : appId
-      )
-      if (res.status === 200) {
-        setAssignedMappings(res.data || [])
+  const fetchAssignedMappings = useCallback(
+    async (realmId = filterRealmId, appId = filterApplicationId) => {
+      try {
+        const res = await searchAssignedPermissions(
+          realmId === '-1' ? null : realmId,
+          appId === '-1' ? null : appId,
+        )
+        if (res.status === 200) {
+          setAssignedMappings(res.data || [])
+        }
+      } catch (error) {
+        toast.error('Failed to load assigned mappings: ' + error.message)
       }
-    } catch (error) {
-      toast.error('Failed to load assigned mappings: ' + error.message)
-    }
-  }, [filterRealmId, filterApplicationId])
+    },
+    [filterRealmId, filterApplicationId],
+  )
 
   const fetchDropdownData = useCallback(async () => {
     try {
@@ -143,11 +146,8 @@ const UIPermission = () => {
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data || [])
       }
-      const appsRes = await getActiveApplications()
-      if (appsRes.status === 200) {
-        setApplicationsOptions(appsRes.data || [])
-        setFilterApplicationsOptions(appsRes.data || [])
-      }
+      setApplicationsOptions([])
+      setFilterApplicationsOptions([])
     } catch (error) {
       toast.error('Failed to load dropdown filters: ' + error.message)
     }
@@ -290,10 +290,7 @@ const UIPermission = () => {
 
     try {
       if (realmId === '-1') {
-        const appsRes = await getActiveApplications()
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data || [])
-        }
+        setApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, realmId, null)
         if (searchRes.status === 200) {
@@ -404,15 +401,7 @@ const UIPermission = () => {
     setActivePermissions([])
     setMappingValidated(false)
     setMappingSearchParam('')
-    getActiveApplications()
-      .then((appsRes) => {
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data || [])
-        }
-      })
-      .catch((error) => {
-        toast.error('Failed to reset applications: ' + error.message)
-      })
+    setApplicationsOptions([])
   }
 
   const handleFilterRealmChange = async (realmId) => {
@@ -421,7 +410,7 @@ const UIPermission = () => {
 
     try {
       if (realmId === '-1') {
-        setFilterApplicationsOptions(applicationsOptions)
+        setFilterApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, realmId, null)
         if (searchRes.status === 200) {
@@ -440,7 +429,7 @@ const UIPermission = () => {
   const handleFilterClear = () => {
     setFilterRealmId('-1')
     setFilterApplicationId('-1')
-    setFilterApplicationsOptions(applicationsOptions)
+    setFilterApplicationsOptions([])
   }
 
   const getGroupedMappings = () => {
@@ -493,8 +482,9 @@ const UIPermission = () => {
             >
               <button
                 type="button"
-                className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
-                  }`}
+                className={`btn btn-sm rounded px-3 py-2 border-0 ${
+                  activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
+                }`}
                 style={{
                   color: activeTab === 'definitions' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
                   backgroundColor: activeTab === 'definitions' ? '' : 'transparent',
@@ -507,8 +497,9 @@ const UIPermission = () => {
               </button>
               <button
                 type="button"
-                className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
-                  }`}
+                className={`btn btn-sm rounded px-3 py-2 border-0 ${
+                  activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
+                }`}
                 style={{
                   color: activeTab === 'profile' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
                   backgroundColor: activeTab === 'profile' ? '' : 'transparent',
@@ -748,6 +739,7 @@ const UIPermission = () => {
                       style={{ cursor: 'pointer' }}
                       size="sm"
                       required
+                      disabled={mappingRealmId === '-1'}
                     >
                       <option value="-1">Select an Application</option>
                       {applicationsOptions.map((app, index) => (
@@ -890,7 +882,10 @@ const UIPermission = () => {
                       style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
                     >
                       <CCol xs={12} sm={4}>
-                        <CFormLabel htmlFor="filterRealmSelect" className="text-muted small font-weight-bold">
+                        <CFormLabel
+                          htmlFor="filterRealmSelect"
+                          className="text-muted small font-weight-bold"
+                        >
                           Filter by Realm
                         </CFormLabel>
                         <CFormSelect
@@ -910,7 +905,10 @@ const UIPermission = () => {
                       </CCol>
 
                       <CCol xs={12} sm={4}>
-                        <CFormLabel htmlFor="filterAppSelect" className="text-muted small font-weight-bold">
+                        <CFormLabel
+                          htmlFor="filterAppSelect"
+                          className="text-muted small font-weight-bold"
+                        >
                           Filter by Application
                         </CFormLabel>
                         <CFormSelect
@@ -919,6 +917,7 @@ const UIPermission = () => {
                           onChange={(e) => handleFilterApplicationChange(e.target.value)}
                           style={{ cursor: 'pointer' }}
                           size="sm"
+                          disabled={filterRealmId === '-1'}
                         >
                           <option value="-1">All Applications</option>
                           {filterApplicationsOptions.map((app, index) => (

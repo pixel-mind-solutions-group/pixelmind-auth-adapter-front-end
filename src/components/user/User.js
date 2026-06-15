@@ -155,11 +155,8 @@ const User = () => {
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data || [])
       }
-      const appsRes = await getActiveApplications()
-      if (appsRes.status === 200) {
-        setApplicationsOptions(appsRes.data || [])
-        setFilterApplicationsOptions(appsRes.data || [])
-      }
+      setApplicationsOptions([])
+      setFilterApplicationsOptions([])
     } catch (error) {
       toast.error('Failed to load initial dropdown filters: ' + error.message)
     }
@@ -457,7 +454,6 @@ const User = () => {
   const handleFilterRealmChange = async (rId) => {
     setFilterRealmId(rId)
     setFilterApplicationId('-1')
-    setFilterModulesOptions([])
     setFilterActiveUserRoles([])
     setFilterRoleSearchQuery('')
     setFilterSelectedRole(null)
@@ -465,7 +461,7 @@ const User = () => {
 
     try {
       if (rId === '-1') {
-        setFilterApplicationsOptions(applicationsOptions)
+        setFilterApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, rId, null)
         if (searchRes.status === 200) {
@@ -510,7 +506,7 @@ const User = () => {
   const handleFilterClear = () => {
     setFilterRealmId('-1')
     setFilterApplicationId('-1')
-    setFilterApplicationsOptions(applicationsOptions)
+    setFilterApplicationsOptions([])
     setFilterActiveUserRoles([])
     setFilterRoleSearchQuery('')
     setFilterSelectedRole(null)

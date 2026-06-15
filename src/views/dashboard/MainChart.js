@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from 'react'
 import { CChartLine } from '@coreui/react-chartjs'
 import { getStyle } from '@coreui/utils'
 
+const random = (min = 0, max = 100) => Math.floor(Math.random() * (max - min + 1)) + min
+
 const MainChart = () => {
   const chartRef = useRef(null)
 
@@ -29,8 +31,6 @@ const MainChart = () => {
     return () =>
       document.documentElement.removeEventListener('ColorSchemeChange', handleColorSchemeChange)
   }, [chartRef])
-
-  const random = (min = 0, max = 100) => Math.floor(Math.random() * (max - min + 1)) + min
 
   return (
     <>

@@ -71,10 +71,7 @@ const Module = () => {
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data)
       }
-      const appsRes = await getActiveApplications()
-      if (appsRes.status === 200) {
-        setApplicationsOptions(appsRes.data)
-      }
+      setApplicationsOptions([])
     } catch (error) {
       toast.error('Failed to load filter dropdowns: ' + error.message)
     }
@@ -128,10 +125,7 @@ const Module = () => {
 
     try {
       if (realmId === '-1') {
-        const appsRes = await getActiveApplications()
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data)
-        }
+        setApplicationsOptions([])
       } else {
         const searchRes = await searchApplications(0, 1000, null, realmId, null)
         if (searchRes.status === 200) {
@@ -263,15 +257,7 @@ const Module = () => {
       active: '-1',
     })
     setValidated(false)
-    getActiveApplications()
-      .then((appsRes) => {
-        if (appsRes.status === 200) {
-          setApplicationsOptions(appsRes.data)
-        }
-      })
-      .catch((error) => {
-        toast.error('Failed to reset application list: ' + error.message)
-      })
+    setApplicationsOptions([])
   }
 
   return (
@@ -319,6 +305,7 @@ const Module = () => {
                   style={{ cursor: 'pointer' }}
                   size="sm"
                   required
+                  disabled={formData.realmId === '-1'}
                 >
                   <option value="-1">Select an Application</option>
                   {applicationsOptions.map((app, index) => (

@@ -34,9 +34,9 @@ import { DocsExample } from 'src/components'
 import WidgetsBrand from './WidgetsBrand'
 import WidgetsDropdown from './WidgetsDropdown'
 
-const Widgets = () => {
-  const random = (min, max) => Math.floor(Math.random() * (max - min + 1) + min)
+const random = (min, max) => Math.floor(Math.random() * (max - min + 1) + min)
 
+const Widgets = () => {
   return (
     <CCard className="mb-4">
       <CCardHeader>Widgets</CCardHeader>
