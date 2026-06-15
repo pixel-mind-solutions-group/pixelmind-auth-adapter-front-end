@@ -1,79 +1,57 @@
 import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
-  cilUserPlus,
+  cilSpeedometer,
   cilUser,
-  cilViewModule,
-  cilApplications,
   cilPeople,
-  cilSettings,
+  cilApplications,
+  cilPuzzle,
+  cilShieldAlt,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
 const _nav = [
   {
-    component: CNavGroup,
-    name: 'User Management',
-    to: '/user',
+    component: CNavItem,
+    name: 'Dashboard',
+    to: '/dashboard',
+    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavTitle,
+    name: 'Identity & Access',
+  },
+  {
+    component: CNavItem,
+    name: 'Users',
+    to: '/user/user',
+    icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'User Roles',
+    to: '/user-role/user-role',
     icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
-    items: [
-      {
-        component: CNavItem,
-        name: 'User',
-        to: '/user/user',
-      },
-      {
-        component: CNavItem,
-        name: 'Priviliage',
-        to: '/user/priviliage',
-      },
-    ],
   },
   {
-    component: CNavGroup,
-    name: 'User Role',
-    to: '/user-role',
-    icon: <CIcon icon={cilUserPlus} customClassName="nav-icon" />,
-    items: [
-      {
-        component: CNavItem,
-        name: 'User Role',
-        to: '/user-role/user-role',
-      },
-    ],
+    component: CNavTitle,
+    name: 'System Configuration',
   },
-  // {
-  //   component: CNavItem,
-  //   name: 'User Role',
-  //   to: '/settings/user-role',
-  //   icon: <CIcon icon={cilUserPlus} customClassName="nav-icon" />,
-  // },
-  // {
-  //   component: CNavTitle,
-  //   name: 'Settings',
-  // },
   {
-    component: CNavGroup,
-    name: 'Application',
-    to: '/application',
+    component: CNavItem,
+    name: 'Applications',
+    to: '/application/application',
     icon: <CIcon icon={cilApplications} customClassName="nav-icon" />,
-    items: [
-      {
-        component: CNavItem,
-        name: 'Application',
-        to: '/application/application',
-      },
-    ],
   },
   {
     component: CNavGroup,
-    name: 'Module',
+    name: 'Modules',
     to: '/module',
-    icon: <CIcon icon={cilViewModule} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
-        name: 'Module',
+        name: 'Module Definitions',
         to: '/module/module',
       },
       {
@@ -90,18 +68,18 @@ const _nav = [
   },
   {
     component: CNavGroup,
-    name: 'Settings',
+    name: 'Security & Settings',
     to: '/settings',
-    icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilShieldAlt} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
-        name: 'API Permission',
+        name: 'API Registry',
         to: '/settings/api-permissions',
       },
       {
         component: CNavItem,
-        name: 'UI Permission',
+        name: 'UI Registry',
         to: '/settings/ui-permissions',
       },
     ],
