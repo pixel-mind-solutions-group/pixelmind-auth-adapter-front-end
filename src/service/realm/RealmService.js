@@ -11,3 +11,12 @@ export const getActiveRealms = async () => {
     throw error
   }
 }
+
+export const syncRealmsAndApplications = async () => {
+  try {
+    const response = await axios.post(`${REALM_API_URL}/sync`)
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
