@@ -12,7 +12,7 @@ export const getActiveApplications = async () => {
   }
 }
 
-export const searchApplications = async (page, size, query, realmId, applicationId) => {
+export const searchApplications = async (page, size, query, realmId, applicationId, active) => {
   try {
     const params = {
       page,
@@ -29,6 +29,9 @@ export const searchApplications = async (page, size, query, realmId, application
       applicationId !== -1
     ) {
       params.application_id = applicationId
+    }
+    if (active !== undefined && active !== null) {
+      params.active = active
     }
 
     const response = await axios.get(`${APPLICATION_API_URL}/search`, {

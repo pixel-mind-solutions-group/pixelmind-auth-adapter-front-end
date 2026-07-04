@@ -41,7 +41,7 @@ const Application = () => {
 
   const fetchDropdownData = useCallback(async () => {
     try {
-      const realmsRes = await getActiveRealms()
+      const realmsRes = await getActiveRealms(false) // fetch all realms including inactive ones
       if (realmsRes.status === 200) {
         setRealmsOptions(realmsRes.data)
       }
@@ -53,12 +53,14 @@ const Application = () => {
 
   const fetchApplications = useCallback(async () => {
     try {
+      const activeParam = statusFilter === '-1' ? null : statusFilter === 'active'
       const data = await searchApplications(
         currentPage,
         size,
         searchParam,
         realmFilter,
         applicationFilter,
+        activeParam,
       )
       if (data.status === 200) {
         setApplications(data.data.applications)
@@ -69,7 +71,7 @@ const Application = () => {
     } catch (error) {
       toast.error('Failed to load applications: ' + error.message)
     }
-  }, [currentPage, size, searchParam, realmFilter, applicationFilter])
+  }, [currentPage, size, searchParam, realmFilter, applicationFilter, statusFilter])
 
   useEffect(() => {
     fetchDropdownData()
@@ -145,77 +147,114 @@ const Application = () => {
             <strong>Manage Applications</strong>
           </CCardHeader>
           <CCardBody>
-            <CRow className="mb-3 align-items-center">
-              <CCol xs={12} md={6} className="d-flex flex-column flex-md-row gap-2">
-                <CCol md="auto" className="flex-grow-1">
-                  <label
-                    className="form-label mb-1"
-                    style={{
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Realm:
-                  </label>
-                  <CFormSelect
-                    id="realmFilter"
-                    value={realmFilter}
-                    onChange={(e) => handleRealmChange(e.target.value)}
-                    size="sm"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <option value="-1">All Realms</option>
-                    {realmsOptions.map((realm) => (
-                      <option key={realm.id} value={realm.id}>
-                        {realm.realm}
-                      </option>
-                    ))}
-                  </CFormSelect>
-                </CCol>
-                <CCol md="auto" className="flex-grow-1">
-                  <label
-                    className="form-label mb-1"
-                    style={{
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Application:
-                  </label>
-                  <CFormSelect
-                    id="applicationFilter"
-                    value={applicationFilter}
-                    onChange={(e) => setApplicationFilter(e.target.value)}
-                    size="sm"
-                    style={{ cursor: 'pointer' }}
-                    disabled={realmFilter === '-1'}
-                  >
-                    <option value="-1">All Applications</option>
-                    {applicationsOptions.map((app, index) => (
-                      <option key={app.id ? `${app.id}-${index}` : index} value={app.id}>
-                        {app.clientId} ({app.realm?.realm || 'N/A'})
-                      </option>
-                    ))}
-                  </CFormSelect>
-                </CCol>
-              </CCol>
-              <CCol xs={12} md={6} className="d-flex justify-content-md-end gap-2">
-                <CFormInput
-                  type="text"
-                  placeholder="Search application..."
+            {/* Filtration Section */}
+            <div
+              className="row g-3 mb-4 pb-3 border-bottom align-items-end"
+              style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+            >
+              {/* Realm Select */}
+              <CCol xs={12} sm={6} md={3}>
+                <label
+                  htmlFor="realmFilter"
+                  className="form-label text-muted small font-weight-bold mb-1"
+                >
+                  Filter by Realm
+                </label>
+                <CFormSelect
+                  id="realmFilter"
+                  value={realmFilter}
+                  onChange={(e) => handleRealmChange(e.target.value)}
                   size="sm"
-                  style={{ maxWidth: '300px' }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="-1">All Realms</option>
+                  {realmsOptions.map((realm) => (
+                    <option key={realm.id} value={realm.id}>
+                      {realm.realm} {!realm.active && '(Inactive)'}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+
+              {/* Application Select */}
+              <CCol xs={12} sm={6} md={3}>
+                <label
+                  htmlFor="applicationFilter"
+                  className="form-label text-muted small font-weight-bold mb-1"
+                >
+                  Filter by Application
+                </label>
+                <CFormSelect
+                  id="applicationFilter"
+                  value={applicationFilter}
+                  onChange={(e) => setApplicationFilter(e.target.value)}
+                  size="sm"
+                  style={{ cursor: 'pointer' }}
+                  disabled={realmFilter === '-1'}
+                >
+                  <option value="-1">All Applications</option>
+                  {applicationsOptions.map((app, index) => (
+                    <option key={app.id ? `${app.id}-${index}` : index} value={app.id}>
+                      {app.clientId} ({app.realm?.realm || 'N/A'})
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+
+              {/* Application Status Select */}
+              <CCol xs={12} sm={6} md={2}>
+                <label
+                  htmlFor="statusFilter"
+                  className="form-label text-muted small font-weight-bold mb-1"
+                >
+                  Filter by Status
+                </label>
+                <CFormSelect
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value)
+                    setCurrentPage(0)
+                  }}
+                  size="sm"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="-1">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </CFormSelect>
+              </CCol>
+
+              {/* Search Text Input */}
+              <CCol xs={12} sm={6} md={2}>
+                <label
+                  htmlFor="searchParamInput"
+                  className="form-label text-muted small font-weight-bold mb-1"
+                >
+                  Search
+                </label>
+                <CFormInput
+                  id="searchParamInput"
+                  type="text"
+                  placeholder="Search applications..."
+                  size="sm"
                   value={searchParam}
-                  onChange={(e) => setSearchParam(e.target.value)}
+                  onChange={(e) => {
+                    setSearchParam(e.target.value)
+                    setCurrentPage(0)
+                  }}
                 />
               </CCol>
-            </CRow>
-            <CRow className="mb-2">
-              <CCol xs={12} className="d-flex gap-2">
+
+              {/* Action Buttons */}
+              <CCol xs={12} md={2} className="d-flex gap-2">
                 <CButton
                   color="primary"
                   size="sm"
                   onClick={handleSync}
                   disabled={isSyncing}
-                  className="d-inline-flex align-items-center"
+                  className="d-inline-flex align-items-center w-100 justify-content-center shadow-sm"
+                  style={{ minHeight: '31px', fontWeight: '500' }}
                 >
                   {isSyncing ? (
                     <CSpinner size="sm" className="me-1" />
@@ -225,15 +264,15 @@ const Application = () => {
                   Sync
                 </CButton>
                 <button
-                  className="btn btn-sm btn-outline-secondary"
+                  className="btn btn-sm btn-outline-secondary w-100"
                   onClick={handleResetFilters}
                   type="button"
+                  style={{ minHeight: '31px', fontWeight: '500' }}
                 >
-                  Clear Filters
+                  Clear
                 </button>
               </CCol>
-            </CRow>
-            <hr className="my-3" />
+            </div>
             <CCol xs={12}>
               <CTable>
                 <CTableHead color="dark">
@@ -242,8 +281,8 @@ const Application = () => {
                     <CTableHeaderCell scope="col">Application</CTableHeaderCell>
                     <CTableHeaderCell scope="col">UUID</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Internal UUID</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Realm Active</CTableHeaderCell>
-                    <CTableHeaderCell scope="col">Application Active</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Realm Status</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Application Status</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>

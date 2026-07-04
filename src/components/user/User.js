@@ -424,6 +424,33 @@ const User = () => {
     }
 
     try {
+      // Validate user cannot have multiple role mappings for the same application in the same realm
+      const uId = Number(selectedUser.id || selectedUser.userId)
+      const userProfilesRes = await searchUserProfiles(
+        0,
+        100,
+        mappingRealmId,
+        mappingApplicationId,
+        uId,
+        null,
+        null
+      )
+      
+      const existingProfiles = userProfilesRes.data?.profiles || []
+      const otherProfiles = existingProfiles.filter(p => p.id !== profileId)
+
+      if (otherProfiles.length > 0) {
+        const roleName = otherProfiles[0].userRole?.roleName || `Role ID ${otherProfiles[0].userRoleId}`
+        toast.error(
+          `Validation Error: User already has role '${roleName}' mapped in this realm and application.`
+        )
+        return
+      }
+    } catch (err) {
+      console.error('Frontend validation error: ', err)
+    }
+
+    try {
       const res = await registerOrModifyUserProfile(payload)
       if (res.status === 201 || res.status === 200) {
         toast.success(res.message || 'User Profile mapped successfully!')
@@ -433,7 +460,11 @@ const User = () => {
         toast.info(res.message)
       }
     } catch (error) {
-      toast.error(error.message || 'Failed to save User Profile mapping.')
+      if (error.response && error.response.data && error.response.data.status === 400) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error(error.message || 'Failed to save User Profile mapping.')
+      }
     }
   }
 

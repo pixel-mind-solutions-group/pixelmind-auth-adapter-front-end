@@ -1029,7 +1029,9 @@ const APIPermission = () => {
               <p>
                 <strong>{permissionToDelete.apiPermissionName}</strong>
               </p>
-              <p className="text-danger small">This action cannot be undone.</p>
+              <p className="text-danger small">
+                <strong>Warning:</strong> You can only delete this permission if it is not mapped to any applications (profile mappings). This action cannot be undone.
+              </p>
             </div>
           ) : (
             <p>Are you sure you want to delete this API permission?</p>

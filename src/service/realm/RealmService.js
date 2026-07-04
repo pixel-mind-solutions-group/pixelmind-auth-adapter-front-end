@@ -3,9 +3,11 @@ import axios from 'axios'
 
 const REALM_API_URL = `${environment.baseUrl}/realm`
 
-export const getActiveRealms = async () => {
+export const getActiveRealms = async (onlyActive = true) => {
   try {
-    const response = await axios.get(`${REALM_API_URL}/active`)
+    const response = await axios.get(`${REALM_API_URL}/active`, {
+      params: { only_active: onlyActive }
+    })
     return response.data
   } catch (error) {
     throw error
