@@ -1046,8 +1046,8 @@ const UserRole = () => {
             <div
               className="d-flex mb-4 p-1 rounded"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--cui-tertiary-bg)',
+                border: '1px solid var(--cui-border-color)',
                 maxWidth: 'fit-content',
               }}
             >
@@ -1057,7 +1057,7 @@ const UserRole = () => {
                   activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
                 }`}
                 style={{
-                  color: activeTab === 'definitions' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'definitions' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'definitions' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -1072,7 +1072,7 @@ const UserRole = () => {
                   activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
                 }`}
                 style={{
-                  color: activeTab === 'profile' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'profile' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'profile' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -1226,12 +1226,12 @@ const UserRole = () => {
                   </CCol>
                 </CForm>
 
-                <hr className="my-4" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
+                <hr className="my-4" />
 
                 {/* Definitions Table Filters */}
                 <div
                   className="row g-3 mb-4 pb-3 border-bottom align-items-end"
-                  style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                  style={{ borderColor: 'var(--cui-border-color)' }}
                 >
                   <CCol xs={12} sm={3}>
                     <CFormLabel
@@ -1488,7 +1488,7 @@ const UserRole = () => {
                             maxHeight: '200px',
                             overflowY: 'auto',
                             backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            border: '1px solid var(--cui-border-color)',
                             borderRadius: '0.25rem',
                           }}
                         >
@@ -1497,7 +1497,7 @@ const UserRole = () => {
                               <button
                                 key={role.roleId}
                                 type="button"
-                                className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                                className="dropdown-item text-start d-block w-100 py-2 border-0 text-body"
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => {
                                   setSelectedRole(role)
@@ -1532,8 +1532,8 @@ const UserRole = () => {
                           xs={12}
                           className="mt-4 text-center py-5 rounded border"
                           style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                            borderColor: 'rgba(255, 255, 255, 0.08)',
+                            backgroundColor: 'var(--cui-tertiary-bg)',
+                            borderColor: 'var(--cui-border-color)',
                           }}
                         >
                           <div className="spinner-border text-info spinner-border-sm" role="status">
@@ -1550,15 +1550,15 @@ const UserRole = () => {
                               <CCard
                                 className="border shadow-sm"
                                 style={{
-                                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                  borderColor: 'rgba(255, 255, 255, 0.08)',
+                                  backgroundColor: 'var(--cui-tertiary-bg)',
+                                  borderColor: 'var(--cui-border-color)',
                                 }}
                               >
                                 <CCardHeader
                                   className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
-                                  style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                  style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                                 >
-                                  <strong className="text-light small">
+                                  <strong className="text-body small">
                                     Modules & Nested Permissions
                                   </strong>
                                   <CFormCheck
@@ -1592,9 +1592,9 @@ const UserRole = () => {
                                         className="mb-3 p-3 rounded"
                                         style={{
                                           backgroundColor: isChecked
-                                            ? 'rgba(255, 255, 255, 0.02)'
-                                            : 'rgba(255, 255, 255, 0.005)',
-                                          border: '1px solid rgba(255, 255, 255, 0.04)',
+                                            ? 'var(--cui-tertiary-bg)'
+                                            : 'var(--cui-body-bg)',
+                                          border: '1px solid var(--cui-border-color)',
                                         }}
                                       >
                                         {/* Module Checkbox and Label */}
@@ -1609,7 +1609,7 @@ const UserRole = () => {
                                           />
                                           <label
                                             htmlFor={`module-${module.moduleId}`}
-                                            className="font-weight-semibold text-light mb-0"
+                                            className="font-weight-semibold text-body mb-0"
                                             style={{
                                               cursor: 'pointer',
                                               userSelect: 'none',
@@ -1624,7 +1624,7 @@ const UserRole = () => {
                                         {isChecked && (
                                           <div
                                             className="row mt-3 ms-2 ps-3 border-start"
-                                            style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                                            style={{ borderColor: 'var(--cui-border-color)' }}
                                           >
                                             {/* API Permissions Column */}
                                             <div className="col-12 col-md-6 mb-3 mb-md-0">
@@ -1659,8 +1659,8 @@ const UserRole = () => {
                                                 style={{
                                                   maxHeight: '180px',
                                                   overflowY: 'auto',
-                                                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                                                  borderColor: 'rgba(255, 255, 255, 0.05)',
+                                                  backgroundColor: 'var(--cui-body-bg)',
+                                                  borderColor: 'var(--cui-border-color)',
                                                 }}
                                               >
                                                 {options.api.length > 0 ? (
@@ -1738,8 +1738,8 @@ const UserRole = () => {
                                                 style={{
                                                   maxHeight: '180px',
                                                   overflowY: 'auto',
-                                                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                                                  borderColor: 'rgba(255, 255, 255, 0.05)',
+                                                  backgroundColor: 'var(--cui-body-bg)',
+                                                  borderColor: 'var(--cui-border-color)',
                                                 }}
                                               >
                                                 {options.ui.length > 0 ? (
@@ -1803,15 +1803,15 @@ const UserRole = () => {
                                 <CCard
                                   className="border shadow-sm h-100"
                                   style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                                    backgroundColor: 'var(--cui-tertiary-bg)',
+                                    borderColor: 'var(--cui-border-color)',
                                   }}
                                 >
                                   <CCardHeader
                                     className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
-                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                    style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                                   >
-                                    <strong className="text-light small">API Permissions</strong>
+                                    <strong className="text-body small">API Permissions</strong>
                                     {(modulePermissionsOptions['app']?.api || []).length > 0 && (
                                       <CFormCheck
                                         id="selectAllApi"
@@ -1838,8 +1838,8 @@ const UserRole = () => {
                                         <div
                                           className="d-flex align-items-center rounded px-2 py-1 mb-1"
                                           style={{
-                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
-                                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                                            backgroundColor: 'var(--cui-body-bg)',
+                                            border: '1px solid var(--cui-border-color)',
                                           }}
                                           key={perm.apiPermissionId}
                                         >
@@ -1880,15 +1880,15 @@ const UserRole = () => {
                                 <CCard
                                   className="border shadow-sm h-100"
                                   style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                                    backgroundColor: 'var(--cui-tertiary-bg)',
+                                    borderColor: 'var(--cui-border-color)',
                                   }}
                                 >
                                   <CCardHeader
                                     className="bg-transparent py-2 d-flex flex-wrap align-items-center justify-content-between gap-2"
-                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                    style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                                   >
-                                    <strong className="text-light small">UI Permissions</strong>
+                                    <strong className="text-body small">UI Permissions</strong>
                                     {(modulePermissionsOptions['app']?.ui || []).length > 0 && (
                                       <CFormCheck
                                         id="selectAllUi"
@@ -1896,9 +1896,7 @@ const UserRole = () => {
                                         checked={
                                           (modulePermissionsOptions['app']?.ui || []).length > 0 &&
                                           (modulePermissionsOptions['app']?.ui || []).every((p) =>
-                                            (modulePermissions['app']?.ui || []).includes(
-                                              p.uiPermissionId,
-                                            ),
+                                            (modulePermissions['app']?.ui || []).includes(p.uiPermissionId),
                                           )
                                         }
                                         onChange={() => handleNestedUiSelectAll('app')}
@@ -1915,8 +1913,8 @@ const UserRole = () => {
                                         <div
                                           className="d-flex align-items-center rounded px-2 py-1 mb-1"
                                           style={{
-                                            backgroundColor: 'rgba(255, 255, 255, 0.01)',
-                                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                                            backgroundColor: 'var(--cui-body-bg)',
+                                            border: '1px solid var(--cui-border-color)',
                                           }}
                                           key={perm.uiPermissionId}
                                         >
@@ -1982,7 +1980,7 @@ const UserRole = () => {
                     {/* Filtration Section */}
                     <div
                       className="row g-3 mb-4 pb-3 border-bottom align-items-end"
-                      style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                      style={{ borderColor: 'var(--cui-border-color)' }}
                     >
                       <CCol xs={12} sm={6} md={3}>
                         <CFormLabel
@@ -2121,7 +2119,7 @@ const UserRole = () => {
                               maxHeight: '200px',
                               overflowY: 'auto',
                               backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              border: '1px solid var(--cui-border-color)',
                               borderRadius: '0.25rem',
                             }}
                           >
@@ -2163,7 +2161,7 @@ const UserRole = () => {
                         <div key={realmName} className="mb-4">
                           <h6
                             className="text-primary font-weight-bold mb-3 border-bottom pb-2"
-                            style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                            style={{ borderColor: 'var(--cui-border-color)' }}
                           >
                             Realm: {realmName}
                           </h6>
@@ -2173,13 +2171,13 @@ const UserRole = () => {
                                 <CCard
                                   className="h-100"
                                   style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    borderColor: 'rgba(255, 255, 255, 0.06)',
+                                    backgroundColor: 'var(--cui-tertiary-bg)',
+                                    borderColor: 'var(--cui-border-color)',
                                   }}
                                 >
                                   <CCardHeader
                                     className="py-2 bg-transparent font-weight-semibold text-truncate"
-                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}
+                                    style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                                     title={appName}
                                   >
                                     Application: {appName}
@@ -2195,7 +2193,7 @@ const UserRole = () => {
                                         <div
                                           key={roleName}
                                           className="mb-3 border-bottom pb-2"
-                                          style={{ borderColor: 'rgba(255, 255, 255, 0.04)' }}
+                                          style={{ borderColor: 'var(--cui-border-color)' }}
                                         >
                                           <div className="d-flex align-items-center justify-content-between mb-2">
                                             <div
@@ -2237,12 +2235,12 @@ const UserRole = () => {
                                                   style={
                                                     isAppLevel
                                                       ? {}
-                                                      : { borderColor: 'rgba(255, 255, 255, 0.1)' }
+                                                      : { borderColor: 'var(--cui-border-color)' }
                                                   }
                                                 >
                                                   {!isAppLevel && (
                                                     <div
-                                                      className="font-weight-bold text-light mb-1"
+                                                      className="font-weight-bold text-body mb-1"
                                                       style={{ fontSize: '0.75rem' }}
                                                     >
                                                       📦 Module: {moduleName}
@@ -2263,10 +2261,8 @@ const UserRole = () => {
                                                           key={`api-${mapping.id}`}
                                                           className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
                                                           style={{
-                                                            backgroundColor:
-                                                              'rgba(255, 255, 255, 0.01)',
-                                                            border:
-                                                              '1px solid rgba(255, 255, 255, 0.02)',
+                                                            backgroundColor: 'var(--cui-body-bg)',
+                                                            border: '1px solid var(--cui-border-color)',
                                                           }}
                                                         >
                                                           <span
@@ -2318,10 +2314,8 @@ const UserRole = () => {
                                                           key={`ui-${mapping.id}`}
                                                           className="d-flex align-items-center justify-content-between py-1 px-2 rounded mb-1"
                                                           style={{
-                                                            backgroundColor:
-                                                              'rgba(255, 255, 255, 0.01)',
-                                                            border:
-                                                              '1px solid rgba(255, 255, 255, 0.02)',
+                                                            backgroundColor: 'var(--cui-body-bg)',
+                                                            border: '1px solid var(--cui-border-color)',
                                                           }}
                                                         >
                                                           <span

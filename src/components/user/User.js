@@ -652,8 +652,8 @@ const User = () => {
             <div
               className="d-flex mb-4 p-1 rounded"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--cui-tertiary-bg)',
+                border: '1px solid var(--cui-border-color)',
                 maxWidth: 'fit-content',
               }}
             >
@@ -661,7 +661,7 @@ const User = () => {
                 type="button"
                 className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''}`}
                 style={{
-                  color: activeTab === 'definitions' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'definitions' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'definitions' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -674,7 +674,7 @@ const User = () => {
                 type="button"
                 className={`btn btn-sm rounded px-3 py-2 border-0 ${activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''}`}
                 style={{
-                  color: activeTab === 'profile' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'profile' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'profile' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -810,7 +810,7 @@ const User = () => {
                   </CCol>
                 </CForm>
 
-                <hr className="my-4" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
+                <hr className="my-4" />
 
                 <CRow className="mb-3 align-items-center">
                   <CCol xs={12} md={6} className="d-flex flex-column flex-md-row gap-2">
@@ -977,7 +977,7 @@ const User = () => {
                           maxHeight: '200px',
                           overflowY: 'auto',
                           backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          border: '1px solid var(--cui-border-color)',
                           borderRadius: '0.25rem',
                         }}
                       >
@@ -986,7 +986,7 @@ const User = () => {
                             <button
                               key={u.userId}
                               type="button"
-                              className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                              className="dropdown-item text-start d-block w-100 py-2 border-0 text-body"
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
                                 setSelectedUser({ id: u.userId || u.id, username: u.username })
@@ -1112,7 +1112,7 @@ const User = () => {
                           maxHeight: '200px',
                           overflowY: 'auto',
                           backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          border: '1px solid var(--cui-border-color)',
                           borderRadius: '0.25rem',
                         }}
                       >
@@ -1121,7 +1121,7 @@ const User = () => {
                             <button
                               key={role.roleId}
                               type="button"
-                              className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                              className="dropdown-item text-start d-block w-100 py-2 border-0 text-body"
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
                                 setSelectedRole(role)
@@ -1162,12 +1162,11 @@ const User = () => {
                   </CCol>
                 </CForm>
 
-                <hr className="my-4" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }} />
-
+                <hr className="my-4" />
                 {/* Filtration section for Mapping Table */}
                 <div
                   className="row g-3 mb-4 pb-3 border-bottom align-items-end"
-                  style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                  style={{ borderColor: 'var(--cui-border-color)' }}
                 >
                   <CCol xs={12} sm={6} md={3}>
                     <CFormLabel
@@ -1274,7 +1273,7 @@ const User = () => {
                           maxHeight: '200px',
                           overflowY: 'auto',
                           backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          border: '1px solid var(--cui-border-color)',
                           borderRadius: '0.25rem',
                         }}
                       >
@@ -1283,7 +1282,7 @@ const User = () => {
                             <button
                               key={u.userId}
                               type="button"
-                              className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                              className="dropdown-item text-start d-block w-100 py-2 border-0 text-body"
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
                                 setFilterSelectedUser({
@@ -1364,7 +1363,7 @@ const User = () => {
                           maxHeight: '200px',
                           overflowY: 'auto',
                           backgroundColor: 'var(--cui-body-bg, #2a303d)',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          border: '1px solid var(--cui-border-color)',
                           borderRadius: '0.25rem',
                         }}
                       >
@@ -1373,7 +1372,7 @@ const User = () => {
                             <button
                               key={role.roleId}
                               type="button"
-                              className="dropdown-item text-start d-block w-100 py-2 border-0 bg-transparent text-body"
+                              className="dropdown-item text-start d-block w-100 py-2 border-0 text-body"
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
                                 setFilterSelectedRole(role)

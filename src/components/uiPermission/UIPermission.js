@@ -475,8 +475,8 @@ const UIPermission = () => {
             <div
               className="d-flex mb-4 p-1 rounded"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--cui-tertiary-bg)',
+                border: '1px solid var(--cui-border-color)',
                 maxWidth: 'fit-content',
               }}
             >
@@ -486,7 +486,7 @@ const UIPermission = () => {
                   activeTab === 'definitions' ? 'btn-primary text-white shadow-sm' : ''
                 }`}
                 style={{
-                  color: activeTab === 'definitions' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'definitions' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'definitions' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -501,7 +501,7 @@ const UIPermission = () => {
                   activeTab === 'profile' ? 'btn-primary text-white shadow-sm' : ''
                 }`}
                 style={{
-                  color: activeTab === 'profile' ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === 'profile' ? '#ffffff' : 'var(--cui-secondary-color)',
                   backgroundColor: activeTab === 'profile' ? '' : 'transparent',
                   transition: 'all 0.25s ease',
                   fontWeight: '500',
@@ -757,11 +757,11 @@ const UIPermission = () => {
                   <CCol xs={12} className="mt-4">
                     <CCard
                       className="border-0 shadow-sm"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
+                      style={{ backgroundColor: 'var(--cui-tertiary-bg)' }}
                     >
                       <CCardHeader
                         className="bg-transparent py-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
-                        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+                        style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                       >
                         <div className="d-flex align-items-center gap-3">
                           <strong className="text-dark font-weight-bold">
@@ -799,13 +799,13 @@ const UIPermission = () => {
                                 className="py-1"
                               >
                                 <div
-                                  className="d-flex align-items-center rounded px-2 py-1"
-                                  style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                    minHeight: '38px',
-                                  }}
-                                >
+                                    className="d-flex align-items-center rounded px-2 py-1"
+                                    style={{
+                                      backgroundColor: 'var(--cui-body-bg)',
+                                      border: '1px solid var(--cui-border-color)',
+                                      minHeight: '38px',
+                                    }}
+                                  >
                                   <CFormCheck
                                     id={`perm-${perm.uiPermissionId}`}
                                     checked={selectedPermissionIds.includes(perm.uiPermissionId)}
@@ -879,7 +879,7 @@ const UIPermission = () => {
                     {/* Filtration Section */}
                     <div
                       className="row g-3 mb-4 pb-3 border-bottom align-items-end"
-                      style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                      style={{ borderColor: 'var(--cui-border-color)' }}
                     >
                       <CCol xs={12} sm={4}>
                         <CFormLabel
@@ -944,7 +944,7 @@ const UIPermission = () => {
                         <div key={realmName} className="mb-4">
                           <h6
                             className="text-primary font-weight-bold mb-3 border-bottom pb-2"
-                            style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                            style={{ borderColor: 'var(--cui-border-color)' }}
                           >
                             Realm: {realmName}
                           </h6>
@@ -954,13 +954,13 @@ const UIPermission = () => {
                                 <CCard
                                   className="h-100"
                                   style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    borderColor: 'rgba(255, 255, 255, 0.06)',
+                                    backgroundColor: 'var(--cui-tertiary-bg)',
+                                    borderColor: 'var(--cui-border-color)',
                                   }}
                                 >
                                   <CCardHeader
                                     className="py-2 bg-transparent font-weight-semibold"
-                                    style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}
+                                    style={{ borderBottom: '1px solid var(--cui-border-color)' }}
                                   >
                                     Application: {appName}
                                   </CCardHeader>

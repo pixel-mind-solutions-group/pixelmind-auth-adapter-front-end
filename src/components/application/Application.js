@@ -150,7 +150,7 @@ const Application = () => {
             {/* Filtration Section */}
             <div
               className="row g-3 mb-4 pb-3 border-bottom align-items-end"
-              style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+              style={{ borderColor: 'var(--cui-border-color)' }}
             >
               {/* Realm Select */}
               <CCol xs={12} sm={6} md={3}>
