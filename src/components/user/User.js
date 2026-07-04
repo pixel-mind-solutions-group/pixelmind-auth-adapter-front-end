@@ -460,7 +460,7 @@ const User = () => {
         toast.info(res.message)
       }
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.status === 400) {
+      if (error.response && error.response.data && error.response.data.message) {
         toast.error(error.response.data.message)
       } else {
         toast.error(error.message || 'Failed to save User Profile mapping.')
@@ -603,7 +603,11 @@ const User = () => {
         toast.info(res.message)
       }
     } catch (error) {
-      toast.error('Failed to delete mapping: ' + error.message)
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error('Failed to delete mapping: ' + error.message)
+      }
     } finally {
       setIsDeletingProfile(false)
       cancelDeleteProfile()
