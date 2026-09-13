@@ -22,3 +22,25 @@ export const syncRealmsAndApplications = async () => {
     throw error
   }
 }
+
+export const deleteRealm = async (realmId) => {
+  try {
+    const response = await axios.delete(`${REALM_API_URL}/${realmId}`)
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
+export const deleteByRealmAndApplication = async (realmId, applicationId) => {
+  try {
+    const response = await axios.delete(
+      `${REALM_API_URL}/${realmId}/application/${applicationId}`,
+    )
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
+

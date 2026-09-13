@@ -15,12 +15,22 @@ import {
   CTableBody,
   CTableRow,
   CTableDataCell,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSync } from '@coreui/icons'
 import { toast } from 'react-toastify'
 import Pagination from '../pagination/Pagination'
-import { getActiveRealms, syncRealmsAndApplications } from '../../service/realm/RealmService'
+import {
+  getActiveRealms,
+  syncRealmsAndApplications,
+  deleteRealm,
+  deleteByRealmAndApplication,
+} from '../../service/realm/RealmService'
 import { searchApplications } from '../../service/application/ApplicationService'
 
 const Application = () => {
@@ -38,6 +48,10 @@ const Application = () => {
 
   const [realmsOptions, setRealmsOptions] = useState([])
   const [applicationsOptions, setApplicationsOptions] = useState([])
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchDropdownData = useCallback(async () => {
     try {
@@ -136,6 +150,50 @@ const Application = () => {
       toast.error('Sync failed: ' + (error.response?.data?.message || error.message))
     } finally {
       setIsSyncing(false)
+    }
+  }
+
+  const confirmDelete = (app) => {
+    setItemToDelete(app)
+    setDeleteModalVisible(true)
+  }
+
+  const cancelDelete = () => {
+    setDeleteModalVisible(false)
+    setItemToDelete(null)
+  }
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return
+    const realmId = itemToDelete.realm?.id
+    const applicationId = itemToDelete.id
+    if (!realmId) {
+      toast.error('Realm ID not found')
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      let response
+      if (applicationId) {
+        response = await deleteByRealmAndApplication(realmId, applicationId)
+      } else {
+        response = await deleteRealm(realmId)
+      }
+
+      if (response.status === 200) {
+        toast.success(response.message || 'Deleted successfully')
+        setDeleteModalVisible(false)
+        setItemToDelete(null)
+        await fetchDropdownData()
+        await fetchApplications()
+      } else {
+        toast.error('Failed to delete: ' + (response.message || 'Unknown error'))
+      }
+    } catch (error) {
+      toast.error('Failed to delete: ' + (error.response?.data?.message || error.message))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -283,6 +341,7 @@ const Application = () => {
                     <CTableHeaderCell scope="col">Internal UUID</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Realm Status</CTableHeaderCell>
                     <CTableHeaderCell scope="col">Application Status</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Action</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
@@ -303,11 +362,21 @@ const Application = () => {
                             {app.active ? 'Active' : 'Inactive'}
                           </span>
                         </CTableDataCell>
+                        <CTableDataCell>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-3"
+                            onClick={() => confirmDelete(app)}
+                            title="Delete all data for this realm and application"
+                          >
+                            Delete
+                          </button>
+                        </CTableDataCell>
                       </CTableRow>
                     ))
                   ) : (
                     <CTableRow>
-                      <CTableDataCell colSpan="6" className="text-center py-4">
+                      <CTableDataCell colSpan="7" className="text-center py-4">
                         <span className="text-muted">No applications found</span>
                       </CTableDataCell>
                     </CTableRow>
@@ -324,6 +393,43 @@ const Application = () => {
           </CCardBody>
         </CCard>
       </CCol>
+
+      {/* Delete Confirmation Modal */}
+      <CModal visible={deleteModalVisible} onClose={cancelDelete} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Confirm Deletion</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {itemToDelete ? (
+            <div>
+              <p>
+                Are you sure you want to delete all data related to realm{' '}
+                <strong>{itemToDelete.realm?.realm || 'N/A'}</strong> and application{' '}
+                <strong>{itemToDelete.clientId || 'N/A'}</strong>?
+              </p>
+              <p className="text-danger small mb-0">
+                <strong>Warning:</strong> This will delete everything inside the database related to this realm and application without validation. This action cannot be undone.
+              </p>
+            </div>
+          ) : (
+            <p>Are you sure you want to delete this?</p>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={cancelDelete} size="sm" disabled={isDeleting}>
+            Cancel
+          </CButton>
+          <button
+            type="button"
+            className="btn btn-sm btn-danger px-3 d-inline-flex align-items-center"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting && <CSpinner size="sm" className="me-1" />}
+            Delete
+          </button>
+        </CModalFooter>
+      </CModal>
     </CRow>
   )
 }
