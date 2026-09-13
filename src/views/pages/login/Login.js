@@ -48,7 +48,7 @@ const Login = () => {
 
     // Phase 1: Simulate connection tunnel config
     setTimeout(() => {
-      setLoaderMessage('Authorizing client signature with PixelMind IAM server...')
+      setLoaderMessage('Authorizing client signature with PixelMind IT Solutions server...')
       setTimeout(() => {
         setSubmitPhase('mfa')
       }, 1000)
@@ -146,16 +146,28 @@ const Login = () => {
         {/* Left branding/features panel */}
         <div className={styles.infoPanel}>
           <div className={styles.infoBranding}>
-            <div className={styles.brandLogo}>
-              <i className="fa fa-shield-halved text-white" aria-hidden="true"></i>
+            <div className={styles.brandLogo} style={{ background: 'none', boxShadow: 'none', width: 'auto', height: 'auto' }}>
+              <svg viewBox="0 0 100 100" width="38" height="38">
+                <polygon points="50,8 86,29 86,71 50,92 14,71 14,29" fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinejoin="round"/>
+                <path d="M50 47 L65 39 L50 31 L35 39 Z" fill="#00e5ff"/>
+                <path d="M47 50 L34 42 L34 58 L47 66 Z" fill="#ffffff" opacity="0.9"/>
+                <path d="M53 50 L53 66 L66 58 L66 42 Z" fill="#ffffff" opacity="0.5"/>
+                <path d="M50 16 L56 20 L50 24 L44 20 Z" fill="#00e5ff"/>
+                <path d="M25 32 L29 35 L25 38 L21 35 Z" fill="#ffffff"/>
+                <path d="M75 32 L79 35 L75 38 L71 35 Z" fill="#ffffff"/>
+                <path d="M25 62 L29 65 L25 68 L21 65 Z" fill="#ffffff"/>
+                <path d="M75 62 L79 65 L75 68 L71 65 Z" fill="#ffffff"/>
+                <path d="M50 76 L56 80 L50 84 L44 80 Z" fill="#00e5ff"/>
+                <path d="M50 20 L50 30 M25 35 L32 40 M75 35 L68 40 M25 65 L32 60 M75 65 L68 60 M50 80 L50 70" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
             </div>
-            <span className={styles.brandName}>PIXELMIND IAM</span>
+            <span className={styles.brandName}>PIXELMIND IT SOLUTIONS</span>
           </div>
 
           <div className={styles.infoContent}>
             <h1>Secure Gateway for Digital Workspace</h1>
             <p>
-              Access your centralized PixelMind platform. Protect resources with context-aware security policies and seamless authorization protocols.
+              Access your centralized PixelMind IT Solutions platform. Protect resources with context-aware security policies and seamless authorization protocols.
             </p>
 
             <div className={styles.featuresGrid}>
@@ -216,7 +228,25 @@ const Login = () => {
                   <div className={styles.secureLoader}>
                     <div className={styles.loaderRing}></div>
                     <div className={styles.loaderRingInner}></div>
-                    <i className={`fa ${submitPhase === 'handshake' ? 'fa-check text-success' : 'fa-shield-halved'} ${styles.loaderIcon}`} aria-hidden="true"></i>
+                    {submitPhase === 'handshake' ? (
+                      <i className={`fa fa-check text-success ${styles.loaderIcon}`} aria-hidden="true"></i>
+                    ) : (
+                      <div className={styles.loaderIcon} style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg viewBox="0 0 100 100" width="36" height="36">
+                          <polygon points="50,8 86,29 86,71 50,92 14,71 14,29" fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinejoin="round"/>
+                          <path d="M50 47 L65 39 L50 31 L35 39 Z" fill="#00e5ff"/>
+                          <path d="M47 50 L34 42 L34 58 L47 66 Z" fill="#ffffff" opacity="0.9"/>
+                          <path d="M53 50 L53 66 L66 58 L66 42 Z" fill="#ffffff" opacity="0.5"/>
+                          <path d="M50 16 L56 20 L50 24 L44 20 Z" fill="#00e5ff"/>
+                          <path d="M25 32 L29 35 L25 38 L21 35 Z" fill="#ffffff"/>
+                          <path d="M75 32 L79 35 L75 38 L71 35 Z" fill="#ffffff"/>
+                          <path d="M25 62 L29 65 L25 68 L21 65 Z" fill="#ffffff"/>
+                          <path d="M75 62 L79 65 L75 68 L71 65 Z" fill="#ffffff"/>
+                          <path d="M50 76 L56 80 L50 84 L44 80 Z" fill="#00e5ff"/>
+                          <path d="M50 20 L50 30 M25 35 L32 40 M75 35 L68 40 M25 65 L32 60 M75 65 L68 60 M50 80 L50 70" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   <h3 className={styles.loaderTitle}>
                     {submitPhase === 'handshake' ? 'Handshake Successful' : 'Security Checkpoint'}
@@ -330,7 +360,7 @@ const Login = () => {
                         className={styles.inputField}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="admin@pixelmind.net"
+                        placeholder="admin@pixelminditsolutions.com"
                         required
                       />
                       <i className={`fa fa-user ${styles.inputIcon}`} aria-hidden="true"></i>
